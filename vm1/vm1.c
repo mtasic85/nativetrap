@@ -83,10 +83,8 @@ void f() {
                                                          //  } else {
     inst_array_append(insts, (inst_t){&&add, 6, 6, 1});  //   i += b
     inst_array_append(insts, (inst_t){&&jmp, -7, D, D}); //  }
-                                                         // }
-
-    inst_array_append(insts, (inst_t){&&end, D, D, D});
-
+    inst_array_append(insts, (inst_t){&&end, D, D, D});  // }
+    
     // goto first inst
     inst_t * inst = insts->items;
     goto *inst->op;
