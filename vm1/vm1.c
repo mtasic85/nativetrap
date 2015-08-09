@@ -60,30 +60,6 @@ typedef struct inst_t {
 MAKE_ARRAY(int64, int64_t);
 MAKE_ARRAY(inst, inst_t);
 
-/*
-void f() {
-    int a = 10;
-    int b = 2;
-    int c = 200000000;
-    int d = 7;
-    int e = 1;
-    int f = 0;
-    volatile int i = a; // prevent C compiler from optimizing loop
-
-    while (i < c) {
-        if (i % d == f) {
-            while (i < c) {
-                i += e;
-            }
-        } else {
-            i += b;
-        }
-    }
-    
-    printf("i: %d\n", i);
-}
-*/
-
 void f() {
     // instructions and registers
     inst_array_t * insts = inst_array_new();
