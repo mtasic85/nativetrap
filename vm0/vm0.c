@@ -1,5 +1,5 @@
-// gcc -Og -c vm0.c && gcc -o vm0 vm0.o && time ./vm0
-// clang -O1 -c vm0.c && clang -o vm0 vm0.o && time ./vm0
+// gcc -O4 -c vm0.c && gcc -o vm0 vm0.o && time ./vm0
+// clang -O4 -c vm0.c && clang -o vm0 vm0.o && time ./vm0
 #include <stdio.h>
 
 void f() {
@@ -19,7 +19,7 @@ void f() {
             i += b;
         }
     }
-    
+
     printf("i: %d\n", i);
 }
 
