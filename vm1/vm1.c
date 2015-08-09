@@ -60,7 +60,7 @@ typedef struct inst_t {
 MAKE_ARRAY(int64, int64_t);
 MAKE_ARRAY(inst, inst_t);
 
-#define inst_append(op, a, b, c) \
+#define insts_append(op, a, b, c) \
     inst_array_append(insts, (inst_t){&&op, a, b, c})
 
 void f() {
@@ -69,29 +69,29 @@ void f() {
     int64_array_t * regs = int64_array_new();
 
     // insttructions
-    inst_append(int_const, 0, 10, D);       // a
-    inst_append(int_const, 1, 2, D);        // b
-    inst_append(int_const, 2, 200000000, D);// c
-    inst_append(int_const, 3, 7, D);        // d
-    inst_append(int_const, 4, 1, D);        // e
-    inst_append(int_const, 5, 0, D);        // f
-    inst_append(mov, 6, 0, D);              // i = a
-
-    inst_append(jlt, 6, 2, 8);              // while (i < c) {
-    inst_append(mod, 7, 6, 3);              //  r7 = i % d
-    inst_append(jeq, 7, 5, 4);              //  if (r7 == f) {
-    inst_append(jlt, 6, 2, 4);              //      while (i < c) {
-    inst_append(add, 6, 6, 4);              //          i += e
-    inst_append(jmp, -2, D, D);             //      }
-                                            //  } else {
-    inst_append(add, 6, 6, 1);              //      i += b
-    inst_append(jmp, -7, D, D);             //  }
-    inst_append(end, D, D, D);              // }
+    insts_append(int_const, 0, 10, D);       // a
+    insts_append(int_const, 1, 2, D);        // b
+    insts_append(int_const, 2, 200000000, D);// c
+    insts_append(int_const, 3, 7, D);        // d
+    insts_append(int_const, 4, 1, D);        // e
+    insts_append(int_const, 5, 0, D);        // f
+    insts_append(mov, 6, 0, D);              // i = a
+                                             //
+    insts_append(jlt, 6, 2, 8);              // while (i < c) {
+    insts_append(mod, 7, 6, 3);              //   r7 = i % d
+    insts_append(jeq, 7, 5, 4);              //   if (r7 == f) {
+    insts_append(jlt, 6, 2, 4);              //     while (i < c) {
+    insts_append(add, 6, 6, 4);              //       i += e
+    insts_append(jmp, -2, D, D);             //     }
+                                             //   } else {
+    insts_append(add, 6, 6, 1);              //     i += b
+    insts_append(jmp, -7, D, D);             //   }
+    insts_append(end, D, D, D);              // }
     
     // goto first inst
     inst_t * inst = insts->items;
     goto *inst->op;
-    
+
     int_const:
         regs->items[inst->a] = inst->b;
         DISPATCH;
