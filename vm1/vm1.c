@@ -60,13 +60,13 @@ typedef struct inst_t {
 MAKE_ARRAY(int64, int64_t);
 MAKE_ARRAY(inst, inst_t);
 
-#define insts_append(op, a, b, c) \
-    inst_array_append(insts, (inst_t){&&op, a, b, c})
-
 void f() {
     // instructions and registers
     inst_array_t * insts = inst_array_new();
     int64_array_t * regs = int64_array_new();
+
+    #define insts_append(op, a, b, c) \
+        inst_array_append(insts, (inst_t){&&op, a, b, c})
 
     // insttructions
     insts_append(int_const, 0, 10, D);       // a
@@ -87,7 +87,7 @@ void f() {
     insts_append(add, 6, 6, 1);              //     i += b
     insts_append(jmp, -7, D, D);             //   }
     insts_append(end, D, D, D);              // }
-    
+
     // goto first inst
     inst_t * inst = insts->items;
     goto *inst->op;
