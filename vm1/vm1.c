@@ -69,12 +69,12 @@ void f() {
         inst_array_append(insts, (inst_t){&&op, a, b, c})
 
     // insttructions
-    insts_append(int_const, 0, 10, D);       // a
-    insts_append(int_const, 1, 2, D);        // b
-    insts_append(int_const, 2, 200000000, D);// c
-    insts_append(int_const, 3, 7, D);        // d
-    insts_append(int_const, 4, 1, D);        // e
-    insts_append(int_const, 5, 0, D);        // f
+    insts_append(int_const, 0, 10, D);       // a = 10
+    insts_append(int_const, 1, 2, D);        // b = 2
+    insts_append(int_const, 2, 200000000, D);// c = 200000000
+    insts_append(int_const, 3, 7, D);        // d = 7
+    insts_append(int_const, 4, 1, D);        // e = 1
+    insts_append(int_const, 5, 0, D);        // f = 0
     insts_append(mov, 6, 0, D);              // i = a
                                              //
     insts_append(jlt, 6, 2, 8);              // while (i < c) {
@@ -87,6 +87,19 @@ void f() {
     insts_append(add, 6, 6, 1);              //     i += b
     insts_append(jmp, -7, D, D);             //   }
     insts_append(end, D, D, D);              // }
+
+    // insts_append(int_const, 0, 10, D);       // a
+    // insts_append(int_const, 1, 2, D);        // b
+    // insts_append(int_const, 2, 200000000, D);// c
+    // insts_append(int_const, 3, 7, D);        // d
+    // insts_append(int_const, 4, 1, D);        // e
+    // insts_append(int_const, 5, 0, D);        // f
+    // insts_append(mov, 6, 0, D);              // i = a
+    //                                          //
+    // insts_append(jlt, 6, 2, 3);              // while (i < c) {
+    // insts_append(add, 6, 6, 1);              //     i += b
+    // insts_append(jmp, -2, D, D);             // }
+    // insts_append(end, D, D, D);              //    
 
     // goto first inst
     inst_t * inst = insts->items;
@@ -128,7 +141,7 @@ void f() {
     end:
         ;
 
-    printf("i: %d\n", regs->items[6]);
+    printf("i: %ld\n", regs->items[6]);
 
     // cleanup
     int64_array_del(regs);
