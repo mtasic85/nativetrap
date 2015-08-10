@@ -8,12 +8,18 @@ void f() {
     int c = 200000000;
     int d = 7;
     int e = 1;
-    volatile int i = a; // prevent C compiler from optimizing loop
-
+    int f = 0;
+    // volatile int i = a; // prevent C compiler from optimizing loop
+    int i = a;
+    
     while (i < c) {
-        if (i % d == 0) {
+        if (i % d == f) {
             while (i < c) {
                 i += e;
+
+                if (i % d == f) {
+                    break;
+                }
             }
         } else {
             i += b;
