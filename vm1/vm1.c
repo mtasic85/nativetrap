@@ -23,7 +23,7 @@
     \
     prefix ## _array_t * prefix ## _array_new(void) { \
         prefix ## _array_t * s = (prefix ## _array_t *) malloc(sizeof(prefix ## _array_t)); \
-        s->cap = 16u; \
+        s->cap = 32u; \
         s->len = 0u; \
         s->items = (type *) malloc(s->cap * sizeof(type)); \
         return s; \
@@ -77,17 +77,24 @@ void f() {
     insts_append(int_const, 5, 0, D);        // f = 0
     insts_append(mov, 6, 0, D);              // i = a
                                              //
-    insts_append(jlt, 6, 2, 8);              // while (i < c) {
+    insts_append(jlt, 6, 2, 12);             // while (i < c) {
     insts_append(mod, 7, 6, 3);              //   r7 = i % d
-    insts_append(jeq, 7, 5, 4);              //   if (r7 == f) {
-    insts_append(jlt, 6, 2, 4);              //     while (i < c) {
+    insts_append(jeq, 7, 5, 8);              //   if (r7 == f) {
+    insts_append(jlt, 6, 2, 6);              //     while (i < c) {
     insts_append(add, 6, 6, 4);              //       i += e
-    insts_append(jmp, -2, D, D);             //     }
+    insts_append(mod, 8, 6, 3);              //       r8 = i % d
+    insts_append(jeq, 8, 5, 2);              //       if (r8 == f) {
+    insts_append(jmp, 2, D, D);              //         break
+                                             //       }
+    insts_append(jmp, -5, D, D);             //
+    insts_append(jmp, 2, D, D);              //     }
                                              //   } else {
     insts_append(add, 6, 6, 1);              //     i += b
-    insts_append(jmp, -7, D, D);             //   }
-    insts_append(end, D, D, D);              // }
-    
+                                             //   }
+    insts_append(jmp, -11, D, D);            // 
+    insts_append(nop, D, D, D);              // }
+    insts_append(end, D, D, D);
+
     // goto first inst
     inst_t * inst = insts->items;
     goto *inst->op;
@@ -123,6 +130,9 @@ void f() {
 
     mod:
         regs->items[inst->a] = regs->items[inst->b] % regs->items[inst->c];
+        DISPATCH;
+
+    nop:
         DISPATCH;
 
     end:
