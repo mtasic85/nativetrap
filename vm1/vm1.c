@@ -75,23 +75,24 @@ void f() {
     insts_append(int_const, 3, 7, D);        // d = 7
     insts_append(int_const, 4, 1, D);        // e = 1
     insts_append(int_const, 5, 0, D);        // f = 0
-    insts_append(mov, 6, 0, D);              // i = a
-                                             //
-    insts_append(jlt, 6, 2, 12);             // while (i < c) {
-    insts_append(mod, 7, 6, 3);              //   r7 = i % d
-    insts_append(jeq, 7, 5, 8);              //   if (r7 == f) {
-    insts_append(jlt, 6, 2, 6);              //     while (i < c) {
-    insts_append(add, 6, 6, 4);              //       i += e
-    insts_append(mod, 8, 6, 3);              //       r8 = i % d
-    insts_append(jeq, 8, 5, 2);              //       if (r8 == f) {
-    insts_append(jmp, -7, D, D);             //         break
-                                             //       }
-    insts_append(jmp, -5, D, D);             //
-    insts_append(jmp, -9, D, D);             //     }
-                                             //   } else {
-    insts_append(add, 6, 6, 1);              //     i += b
-    insts_append(jmp, -11, D, D);            //   }
-    insts_append(end, D, D, D);              // }
+    insts_append(mov,   6,   0,   D);        // i = a
+    insts_append(jlt,   6,   2,  16);        // while (i < c) {
+    insts_append(mod,   7,   6,   3);        //   r7 = i % d
+    insts_append(jeq,   7,   5,  10);        //   if (r7 == f) {
+    insts_append(jlt,   6,   2,   7);        //     while (i < c) {
+    insts_append(add,   6,   6,   4);        //       i += e
+    insts_append(mod,   8,   6,   3);        //       r8 = i % d
+    insts_append(jeq,   8,   5,   2);        //       if (r8 == f) {
+    insts_append(jmp,   3,   D,   D);        //         break
+    insts_append(nop,   D,   D,   D);        //       }
+    insts_append(jmp,  -6,   D,   D);        //
+    insts_append(nop,   D,   D,   D);        //     }
+    insts_append(jmp,   3,   D,   D);        //
+    insts_append(nop,   D,   D,   D);        //   } else {
+    insts_append(add,   6,   6,   1);        //     i += b
+    insts_append(nop,   D,   D,   D);        //   }
+    insts_append(jmp, -15,   D,   D);        //
+    insts_append(end,   D,   D,   D);        // }
 
     // goto first inst
     inst_t * inst = insts->items;
