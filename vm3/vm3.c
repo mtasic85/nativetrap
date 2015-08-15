@@ -201,9 +201,30 @@ void f() {
     insts_append(int_const, 5, 0, D);        // f = 0
     insts_append(mov,   6,   0,   D);        // i = a
     
-    insts_append(jlt,   6,   2,  34);        // while (i < c) {
+    insts_append(jlt,   6,   2,  52);        // while (i < c) {
     insts_append(mod,   7,   6,   3);        //   r7 = i % d
-    insts_append(jeq,   7,   5,  28);        //   if (r7 == f) {
+    insts_append(jeq,   7,   5,  46);        //   if (r7 == f) {
+    
+    insts_append(jlt,   6,   2,  43);        //     *while (i < c) {
+    insts_append(add,   6,   6,   4);        //       i += e
+    insts_append(mod,   8,   6,   3);        //       r8 = i % d
+    insts_append(jeq,   8,   5,  32);        //       if (r8 == f) {
+    insts_append(jmp,   39,  D,   D);        //         break
+    insts_append(nop,   D,   D,   D);        //       }
+
+    insts_append(jlt,   6,   2,  37);        //     *while (i < c) {
+    insts_append(add,   6,   6,   4);        //       i += e
+    insts_append(mod,   8,   6,   3);        //       r8 = i % d
+    insts_append(jeq,   8,   5,  26);        //       if (r8 == f) {
+    insts_append(jmp,   33,  D,   D);        //         break
+    insts_append(nop,   D,   D,   D);        //       }
+    
+    insts_append(jlt,   6,   2,  31);        //     *while (i < c) {
+    insts_append(add,   6,   6,   4);        //       i += e
+    insts_append(mod,   8,   6,   3);        //       r8 = i % d
+    insts_append(jeq,   8,   5,  20);        //       if (r8 == f) {
+    insts_append(jmp,   27,  D,   D);        //         break
+    insts_append(nop,   D,   D,   D);        //       }
     
     insts_append(jlt,   6,   2,  25);        //     *while (i < c) {
     insts_append(add,   6,   6,   4);        //       i += e
@@ -233,14 +254,14 @@ void f() {
     insts_append(jmp,   3,   D,   D);        //         break
     insts_append(nop,   D,   D,   D);        //       }
 
-    insts_append(jmp,  -24,  D,   D);        //
+    insts_append(jmp, -42,   D,   D);        //
     insts_append(nop,   D,   D,   D);        //     }
     
     insts_append(jmp,   3,   D,   D);        //
     insts_append(nop,   D,   D,   D);        //   } else {
     insts_append(add,   6,   6,   1);        //     i += b
     insts_append(nop,   D,   D,   D);        //   }
-    insts_append(jmp, -33,   D,   D);        //
+    insts_append(jmp, -51,   D,   D);        //
     insts_append(end,   D,   D,   D);        // }
 
     // optimize

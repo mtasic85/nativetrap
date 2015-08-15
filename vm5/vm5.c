@@ -1,0 +1,223 @@
+// gcc -O4 -c vm5.c && gcc -o vm5 vm5.o && time ./vm5
+// clang -O4 -c vm5.c && clang -o vm5 vm5.o && time ./vm5
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+
+#define INLINE __inline__
+#define DUMMY UINT64_MAX
+#define D DUMMY
+// #define DISPATCH inst++; goto *inst->op
+// #define DISPATCH_JUMP(dist) inst += dist; goto *inst->op
+#define DISPATCH pc++
+#define DISPATCH_JUMP(dist) pc += dist
+
+// array factory
+#define MAKE_ARRAY(prefix, type) \
+    struct prefix ## _array_t; \
+    \
+    typedef struct prefix ## _array_t { \
+        size_t cap; \
+        size_t len; \
+        type * items; \
+    } prefix ## _array_t; \
+    \
+    prefix ## _array_t * prefix ## _array_new(void) { \
+        prefix ## _array_t * s = (prefix ## _array_t *) malloc(sizeof(prefix ## _array_t)); \
+        s->cap = 32u; \
+        s->len = 0u; \
+        s->items = (type *) malloc(s->cap * sizeof(type)); \
+        return s; \
+    } \
+    \
+    void prefix ## _array_del(prefix ## _array_t * s) { \
+        free(s->items); \
+        free(s); \
+    } \
+    \
+    INLINE type prefix ## _array_getitem(prefix ## _array_t * s, size_t index) { \
+        return s->items[index]; \
+    } \
+    \
+    INLINE void prefix ## _array_setitem(prefix ## _array_t * s, size_t index, type value) { \
+        s->items[index] = value; \
+    } \
+    \
+    INLINE void prefix ## _array_append(prefix ## _array_t * s, type value) { \
+        s->items[s->len++] = value; \
+    } \
+    \
+    INLINE type prefix ## _array_pop(prefix ## _array_t * s) { \
+        return s->items[--s->len]; \
+    }
+
+typedef enum opcode_t {
+    INTC,
+    MOV,
+    JMP,
+    JLT,
+    JEQ,
+    ADD,
+    MOD,
+    NOP,
+    END
+} opcode_t;
+
+typedef struct inst_t {
+    opcode_t op;
+    int64_t a;
+    int64_t b;
+    int64_t c;
+} inst_t;
+
+MAKE_ARRAY(int64, int64_t);
+MAKE_ARRAY(inst, inst_t);
+
+#define insts_append(op, a, b, c) \
+    inst_array_append(insts, (inst_t){op, a, b, c})
+
+void f() {
+    // instructions and registers
+    inst_array_t * insts = inst_array_new();
+    int64_array_t * regs = int64_array_new();
+
+    // insttructions
+    insts_append(INTC,  0,  10,   D);        // a = 10
+    insts_append(INTC,  1,   2,   D);        // b = 2
+    insts_append(INTC,  2, 200000000, D);    // c = 200000000
+    insts_append(INTC,  3,   7,   D);        // d = 7
+    insts_append(INTC,  4,   1,   D);        // e = 1
+    insts_append(INTC,  5,   0,   D);        // f = 0
+    insts_append(MOV,   6,   0,   D);        // i = a
+    insts_append(JLT,   6,   2,  16);        // while (i < c) {
+    insts_append(MOD,   7,   6,   3);        //   r7 = i % d
+    insts_append(JEQ,   7,   5,  10);        //   if (r7 == f) {
+    insts_append(JLT,   6,   2,   7);        //     while (i < c) {
+    insts_append(ADD,   6,   6,   4);        //       i += e
+    insts_append(MOD,   8,   6,   3);        //       r8 = i % d
+    insts_append(JEQ,   8,   5,   2);        //       if (r8 == f) {
+    insts_append(JMP,   3,   D,   D);        //         break
+    insts_append(NOP,   D,   D,   D);        //       }
+    insts_append(JMP,  -6,   D,   D);        //
+    insts_append(NOP,   D,   D,   D);        //     }
+    insts_append(JMP,   3,   D,   D);        //
+    insts_append(NOP,   D,   D,   D);        //   } else {
+    insts_append(ADD,   6,   6,   1);        //     i += b
+    insts_append(NOP,   D,   D,   D);        //   }
+    insts_append(JMP, -15,   D,   D);        //
+    insts_append(END,   D,   D,   D);        // }
+
+    inst_t * inst;
+    int pc = 0;
+    int running = 1;
+
+    while (running) {
+        inst = &insts->items[pc];
+
+        switch (inst->op) {
+            case INTC:
+                regs->items[inst->a] = inst->b;
+                DISPATCH;
+                break;
+            case MOV:
+                regs->items[inst->a] = regs->items[inst->b];
+                DISPATCH;
+                break;
+            case JMP:
+                DISPATCH_JUMP(inst->a);
+                break;
+            case JLT:
+                if (regs->items[inst->a] < regs->items[inst->b]) {
+                    DISPATCH;
+                } else {
+                    DISPATCH_JUMP(inst->c);
+                }
+
+                break;
+            case JEQ:
+                if (regs->items[inst->a] == regs->items[inst->b]) {
+                    DISPATCH;
+                } else {
+                    DISPATCH_JUMP(inst->c);
+                }
+
+                break;
+            case ADD:
+                regs->items[inst->a] = regs->items[inst->b] + regs->items[inst->c];
+                DISPATCH;
+                break;
+            case MOD:
+                regs->items[inst->a] = regs->items[inst->b] % regs->items[inst->c];
+                DISPATCH;
+                break;
+            case NOP:
+                DISPATCH;
+                break;
+            case END:
+            default:
+                running = 0;
+                break;
+        }
+    }
+
+    // // goto first inst
+    // inst_t * inst = insts->items;
+    // goto *inst->op;
+
+    // intc:
+    //     regs->items[inst->a] = inst->b;
+    //     DISPATCH;
+    
+    // mov:
+    //     regs->items[inst->a] = regs->items[inst->b];
+    //     DISPATCH;
+    
+    // jmp:
+    //     DISPATCH_JUMP(inst->a);
+    
+    // jlt:
+    //     if (regs->items[inst->a] < regs->items[inst->b]) {
+    //         DISPATCH;
+    //     } else {
+    //         DISPATCH_JUMP(inst->c);
+    //     }
+        
+    // jeq:
+    //     if (regs->items[inst->a] == regs->items[inst->b]) {
+    //         DISPATCH;
+    //     } else {
+    //         DISPATCH_JUMP(inst->c);
+    //     }
+
+    // add:
+    //     regs->items[inst->a] = regs->items[inst->b] + regs->items[inst->c];
+    //     DISPATCH;
+
+    // mod:
+    //     regs->items[inst->a] = regs->items[inst->b] % regs->items[inst->c];
+    //     DISPATCH;
+
+    // nop:
+    //     DISPATCH;
+
+    // end:
+    //     ;
+
+    // switch (inst->op - &&int_const) {
+    //     case &&int_const - &&int_const:
+    //     default:
+    //         break;
+    // }
+
+    printf("i: %ld\n", regs->items[6]);
+
+    // cleanup
+    int64_array_del(regs);
+    inst_array_del(insts);
+}
+
+int main(int argc, char ** argv) {
+    f();
+    return 0;
+}
