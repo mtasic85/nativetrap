@@ -1,3 +1,4 @@
+// time tcc -run vm0.c
 // gcc -O4 -c vm0.c && gcc -o vm0 vm0.o && time ./vm0
 // clang -O4 -c vm0.c && clang -o vm0 vm0.o && time ./vm0
 #include <stdio.h>

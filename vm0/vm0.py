@@ -2,6 +2,7 @@
 # time python3 vm0.py
 # time pypy vm0.py
 # time pypy3 vm0.py
+# time micropython vm0.py
 a = 10
 b = 2
 c = 200000000
