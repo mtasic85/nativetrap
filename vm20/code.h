@@ -32,6 +32,8 @@ typedef enum op_t {
     JMP,
     JLT,
     JEQ,
+    LT,
+    EQ,
     ADD,
     MOD,
     NOP,

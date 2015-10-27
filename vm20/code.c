@@ -98,6 +98,8 @@ void code_exec(struct code_t * s) {
         &&jmp,
         &&jlt,
         &&jeq,
+        &&lt,
+        &&eq,
         &&add,
         &&mod,
         &&nop,
@@ -165,6 +167,42 @@ void code_exec(struct code_t * s) {
             default:
                 break;
         }
+
+    lt:
+        switch (regs->items[inst->b].t) {
+            case I:
+                switch (regs->items[inst->c].t) {
+                    case I:
+                        regs->items[inst->a].v.i = regs->items[inst->b].v.i < regs->items[inst->c].v.i;
+                        break;
+                    default:
+                        break;
+                }
+
+                break;
+            default:
+                break;
+        }
+        
+        DISPATCH;
+
+    eq:
+        switch (regs->items[inst->b].t) {
+            case I:
+                switch (regs->items[inst->c].t) {
+                    case I:
+                        regs->items[inst->a].v.i = regs->items[inst->b].v.i == regs->items[inst->c].v.i;
+                        break;
+                    default:
+                        break;
+                }
+
+                break;
+            default:
+                break;
+        }
+        
+        DISPATCH;
 
     add:
         switch (regs->items[inst->b].t) {
