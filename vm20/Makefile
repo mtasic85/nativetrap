@@ -1,5 +1,7 @@
-CC=gcc
-# CC=clang
+# clear; make clean; make && ls -l vm && time ./vm
+
+# CC=gcc
+CC=clang
 CFLAGS=-c -Wall -O3
 LDFLAGS=
 SRCS=vm.c code.c string.c struct.c union.c enum.c
@@ -17,6 +19,3 @@ $(EXE): $(OBJS)
 clean:
 	rm $(OBJS)
 	rm $(EXE)
-
-bench:
-	time ./$(EXE)

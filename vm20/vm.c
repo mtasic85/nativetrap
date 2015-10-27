@@ -6,187 +6,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "array.h"
-#include "map.h"
+#include "code.h"
 
-#define INLINE static __inline__
-#define DUMMY UINT64_MAX
-#define D DUMMY
-#define DISPATCH inst++; goto *inst->op
-#define DISPATCH_JUMP(dist) inst += (dist); goto *inst->op
-
-struct string_t;
-enum op_t;
-struct code_t;
-enum type_t;
-union value_t;
-struct reg_t;
-struct inst_t;
-enum own_t;
-
-typedef enum own_t {
-    NONE,
-    CONTAINER,
-    FULL
-} own_t;
-
-typedef struct string_t {
-    enum own_t own;
-    size_t len;
-    char * buffer;
-} string_t;
-
-struct string_t * string_new(size_t len, char * buffer) {
-    return string_new_own(FULL, len, buffer);
-}
-
-struct string_t * string_new_own(enum own_t own, size_t len, char * buffer) {
-    struct string_t * s = (struct string_t *)malloc(sizeof(struct string_t));
-    s->own = own;
-    s->len = len;
-
-    if (own == NONE || own == CONTAINER) {
-        s->buffer = buffer;
-    } else if (own == FULL) {
-        
-    }
-    
-    return s;
-}
-
-void string_del(struct string_t * s) {
-    free(s);
-}
-
-typedef enum op_t {
-    INT_CONST,
-    MOV,
-    JMP,
-    JLT,
-    JEQ,
-    ADD,
-    MOD,
-    NOP,
-    END
-} op_t;
-
-typedef struct code_t {
-    struct inst_array_t * insts;
-    struct reg_array_t * regs;
-} code_t;
-
-struct code_t * code_new(void) {
-    struct code_t * s = (struct code_t *)malloc(sizeof(struct code_t));
-    s->insts = inst_array_new();
-    s->regs = reg_array_new();
-    return s;
-}
-
-void code_del(struct code_t * s) {
-    reg_array_del(s->regs);
-    inst_array_del(s->insts);
-    free(s);
-}
-
-void code_insts_append(struct code_t * s, void * op, struct reg_t * a, struct reg_t * b, struct reg_t * c) {
-    inst_array_append(s->insts, (inst_t){op, a, b, c});
-}
-
-void code_exec(struct code_t * s) {
-
-}
-
-typedef enum type_t {
-    // bool
-    B,
-
-    // int
-    I,
-    I8,
-    I16,
-    I32,
-    I64,
-
-    UI,
-    UI8,
-    UI16,
-    UI32,
-    UI64,
-
-    // float
-    F,
-    F32,
-    F64,
-    F96,
-
-    // string
-    C,  // char
-    CP, // char *
-    S,  // dynamic {len, char *}
-
-    // void
-    V,  // void - no storage
-    P,  // void *
-
-    // type
-    STRUCT, // composite type
-    UNION,  // size of max of fields' sizes
-    ENUM,   // signed int
-
-    // code
-    CODE,
-
-    // function
-    FUNC,
-
-    // module
-    MODULE
-} type_t;
-
-typedef union value_t {
-    bool b;
-
-    int i;
-    int8_t i8;
-    int16_t i16;
-    int32_t i32;
-    int64_t i64;
-    
-    float f;
-    float f32;
-    double f64;
-    long double f96;
-
-    char c;
-    char * cp;
-    string_t s;
-
-    void * p;
-
-    void * struct_;
-    void * union_;
-    void * enum_;
-    
-    struct code_t * code;
-
-    void * func;
-} value_t;
-
-typedef struct reg_t {
-    enum type_t t;
-    union value_t v;
-} reg_t;
-
-typedef struct inst_t {
-    void * op;
-    int64_t a;
-    int64_t b;
-    int64_t c;
-} inst_t;
-
-MAKE_ARRAY(reg, reg_t);
-MAKE_MAP(var_reg, char *, int);
-MAKE_ARRAY(inst, inst_t);
+#ifdef NEW_APPROACH
 
 void f() {
     // instructions and registers
@@ -405,7 +227,61 @@ void f() {
     inst_array_del(insts);
 }
 
+#endif
+
 int main(int argc, char ** argv) {
-    f();
+    /*
+    a = 10
+    b = 2
+    c = 200000000
+    d = 7
+    e = 1
+    f = 0
+    i = a
+
+    while i < c:
+        if i % d == 0:
+            while i < c:
+                i = i + e
+
+                if i % d == f:
+                    break
+        else:
+            i = i + b
+    */
+
+    code_t * code = code_new();
+
+    // insttructions
+    code_insts_append(code, INT_CONST, 0, 10, D);       // a = 10
+    code_insts_append(code, INT_CONST, 1, 2, D);        // b = 2
+    code_insts_append(code, INT_CONST, 2, 200000000, D);// c = 200000000
+    code_insts_append(code, INT_CONST, 3, 7, D);        // d = 7
+    code_insts_append(code, INT_CONST, 4, 1, D);        // e = 1
+    code_insts_append(code, INT_CONST, 5, 0, D);        // f = 0
+    code_insts_append(code, MOV,   6,   0,   D);        // i = a
+    code_insts_append(code, JLT,   6,   2,  16);        // while (i < c) {
+    code_insts_append(code, MOD,   7,   6,   3);        //   r7 = i % d
+    code_insts_append(code, JEQ,   7,   5,  10);        //   if (r7 == f) {
+    code_insts_append(code, JLT,   6,   2,   7);        //     while (i < c) {
+    code_insts_append(code, ADD,   6,   6,   4);        //       i += e
+    code_insts_append(code, MOD,   8,   6,   3);        //       r8 = i % d
+    code_insts_append(code, JEQ,   8,   5,   2);        //       if (r8 == f) {
+    code_insts_append(code, JMP,   3,   D,   D);        //         break
+    code_insts_append(code, NOP,   D,   D,   D);        //       }
+    code_insts_append(code, JMP,  -6,   D,   D);        //
+    code_insts_append(code, NOP,   D,   D,   D);        //     }
+    code_insts_append(code, JMP,   3,   D,   D);        //
+    code_insts_append(code, NOP,   D,   D,   D);        //   } else {
+    code_insts_append(code, ADD,   6,   6,   1);        //     i += b
+    code_insts_append(code, NOP,   D,   D,   D);        //   }
+    code_insts_append(code, JMP, -15,   D,   D);        //
+    code_insts_append(code, END,   D,   D,   D);        // }
+
+    code_exec(code);
+
+    printf("i: %d\n", code->regs->items[6].v.i);
+
+    code_del(code);
     return 0;
 }

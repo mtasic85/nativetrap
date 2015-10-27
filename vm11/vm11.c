@@ -1,5 +1,5 @@
-// gcc -O4 -c vm12.c && gcc -o vm12 vm12.o && time ./vm12
-// clang -O3 -c vm12.c && clang -o vm12 vm12.o && time ./vm12
+// gcc -O4 -c vm11.c && gcc -o vm11 vm11.o && time ./vm11
+// clang -O3 -c vm11.c && clang -o vm11 vm11.o && time ./vm11
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
