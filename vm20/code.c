@@ -15,10 +15,59 @@ void code_del(struct code_t * s) {
     free(s);
 }
 
+/*
+ * code - low-level
+ */
 void code_insts_append(struct code_t * s, enum op_t op, int64_t a, int64_t b, int64_t c) {
     inst_array_append(s->insts, (inst_t){op, NULL, a, b, c});
 }
 
+/*
+ * code - high-level
+ */
+int64_t code_set_var(struct code_t * s, char * var, struct reg_t reg) {
+    return 0;
+}
+
+int64_t code_get_var_reg(struct code_t * s, char * var) {
+    return 0;
+}
+
+void code_mov(struct code_t * s, struct reg_t a, struct reg_t b) {
+
+}
+
+int64_t code_lt(struct code_t * s, struct reg_t a, struct reg_t b) {
+
+}
+
+int64_t code_eq(struct code_t * s, struct reg_t a, struct reg_t b) {
+
+}
+
+void code_if(struct code_t * s, struct reg_t a) {
+
+}
+
+void code_elif(struct code_t * s, struct reg_t a) {
+
+}
+
+void code_else(struct code_t * s) {
+
+}
+
+void code_while(struct code_t * s, struct reg_t a) {
+
+}
+
+void code_end(struct code_t * s) {
+
+}
+
+/*
+ * exec
+ */
 void code_exec(struct code_t * s) {
     inst_array_t * insts = s->insts;
     reg_array_t * regs = s->regs;
