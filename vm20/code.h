@@ -42,6 +42,7 @@ typedef struct code_t {
     struct inst_array_t * insts;
     struct reg_array_t * regs;
     struct var_reg_map_t * vars;
+    int64_t n_regs;
 } code_t;
 
 typedef struct inst_t {
@@ -140,17 +141,19 @@ MAKE_MAP(var_reg, char *, int);
 struct code_t * code_new(void);
 void code_del(struct code_t * s);
 
-void code_insts_append(struct code_t * s, enum op_t op, int64_t a, int64_t b, int64_t c);
+struct inst_t code_insts_get(struct code_t * s, int64_t inst_index);
+void code_insts_set(struct code_t * s, int64_t inst_index, enum op_t op, int64_t a, int64_t b, int64_t c);
+int64_t code_insts_append(struct code_t * s, enum op_t op, int64_t a, int64_t b, int64_t c);
 
 int64_t code_set_var(struct code_t * s, char * var, struct reg_t reg);
 int64_t code_get_var_reg(struct code_t * s, char * var);
-void code_mov(struct code_t * s, struct reg_t a, struct reg_t b);
-int64_t code_lt(struct code_t * s, struct reg_t a, struct reg_t b);
-int64_t code_eq(struct code_t * s, struct reg_t a, struct reg_t b);
-void code_if(struct code_t * s, struct reg_t a);
-void code_elif(struct code_t * s, struct reg_t a);
+void code_mov(struct code_t * s, int64_t a, int64_t b);
+int64_t code_lt(struct code_t * s, int64_t a, int64_t b);
+int64_t code_eq(struct code_t * s, int64_t a, int64_t b);
+void code_if(struct code_t * s, int64_t a);
+void code_elif(struct code_t * s, int64_t a);
 void code_else(struct code_t * s);
-void code_while(struct code_t * s, struct reg_t a);
+void code_while(struct code_t * s, int64_t a);
 void code_end(struct code_t * s);
 
 void code_exec(struct code_t * s);

@@ -5,6 +5,7 @@ struct code_t * code_new(void) {
     s->insts = inst_array_new();
     s->regs = reg_array_new();
     s->vars = var_reg_map_new();
+    s->n_regs = 0;
     return s;
 }
 
@@ -18,38 +19,52 @@ void code_del(struct code_t * s) {
 /*
  * code - low-level
  */
-void code_insts_append(struct code_t * s, enum op_t op, int64_t a, int64_t b, int64_t c) {
+struct inst_t code_insts_get(struct code_t * s, int64_t inst_index) {
+    return inst_array_getitem(s->insts, inst_index);
+}
+
+void code_insts_set(struct code_t * s, int64_t inst_index, enum op_t op, int64_t a, int64_t b, int64_t c) {
+    inst_array_setitem(s->insts, inst_index, (inst_t){op, NULL, a, b, c});
+}
+
+int64_t code_insts_append(struct code_t * s, enum op_t op, int64_t a, int64_t b, int64_t c) {
+    int64_t inst_index = s->insts->len;
     inst_array_append(s->insts, (inst_t){op, NULL, a, b, c});
+    return inst_index;
 }
 
 /*
  * code - high-level
  */
 int64_t code_set_var(struct code_t * s, char * var, struct reg_t reg) {
-    return 0;
+    int64_t reg_index = s->n_regs++;
+    code_insts_append(s, INT_CONST, reg_index, reg.v.i, D);
+    var_reg_map_setitem(s->vars, var, reg_index);
+    return reg_index;
 }
 
 int64_t code_get_var_reg(struct code_t * s, char * var) {
+    int64_t reg_index = var_reg_map_getitem(s->vars, var);
+    return reg_index;
+}
+
+void code_mov(struct code_t * s, int64_t a, int64_t b) {
+    code_insts_append(s, MOV, a, b, D);
+}
+
+int64_t code_lt(struct code_t * s, int64_t a, int64_t b) {
     return 0;
 }
 
-void code_mov(struct code_t * s, struct reg_t a, struct reg_t b) {
+int64_t code_eq(struct code_t * s, int64_t a, int64_t b) {
+    return 0;
+}
+
+void code_if(struct code_t * s, int64_t a) {
 
 }
 
-int64_t code_lt(struct code_t * s, struct reg_t a, struct reg_t b) {
-
-}
-
-int64_t code_eq(struct code_t * s, struct reg_t a, struct reg_t b) {
-
-}
-
-void code_if(struct code_t * s, struct reg_t a) {
-
-}
-
-void code_elif(struct code_t * s, struct reg_t a) {
+void code_elif(struct code_t * s, int64_t a) {
 
 }
 
@@ -57,7 +72,7 @@ void code_else(struct code_t * s) {
 
 }
 
-void code_while(struct code_t * s, struct reg_t a) {
+void code_while(struct code_t * s, int64_t a) {
 
 }
 
