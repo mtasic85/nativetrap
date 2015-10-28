@@ -1,9 +1,12 @@
 // gcc -O3 -c vm.c && gcc -o vm vm.o && time ./vm
 // clang -O3 -c vm.c && clang -o vm vm.o && time ./vm
 //
-// gcc -O2 -fprofile-generate -c vm.c && gcc -fprofile-generate -o vm vm.o && time ./vm && gcc -O2 -fprofile-use -c vm.c && gcc -fprofile-use -o vm vm.o && time ./vm
-// gcc -O3 -fprofile-generate -c vm.c && gcc -fprofile-generate -o vm vm.o && time ./vm && gcc -O3 -fprofile-use -c vm.c && gcc -fprofile-use -o vm vm.o && time ./vm
-// gcc -O4 -fprofile-generate -c vm.c && gcc -fprofile-generate -o vm vm.o && time ./vm && gcc -O4 -fprofile-use -c vm.c && gcc -fprofile-use -o vm vm.o && time ./vm
+// Reference: https://gcc.gnu.org/wiki/LightweightIpo
+// gcc -O2 -fprofile-generate -fripa -c vm.c && gcc -fprofile-generate -o vm vm.o && time ./vm && gcc -O2 -fprofile-use -fripa -c vm.c && gcc -o vm vm.o && time ./vm
+//
+// gcc -O2 -fprofile-generate -c vm.c && gcc -fprofile-generate -o vm vm.o && time ./vm && gcc -O2 -fprofile-use -c vm.c && gcc -o vm vm.o && time ./vm
+// gcc -O3 -fprofile-generate -c vm.c && gcc -fprofile-generate -o vm vm.o && time ./vm && gcc -O3 -fprofile-use -c vm.c && gcc -o vm vm.o && time ./vm
+// gcc -O4 -fprofile-generate -c vm.c && gcc -fprofile-generate -o vm vm.o && time ./vm && gcc -O4 -fprofile-use -c vm.c && gcc -o vm vm.o && time ./vm
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,8 +14,6 @@
 #include <stdint.h>
 
 #define INLINE static __inline__
-#define DUMMY UINT64_MAX
-#define D DUMMY
 #define DISPATCH inst++; goto *inst->op
 #define DISPATCH_JUMP(dist) inst += dist; goto *inst->op
 
@@ -61,16 +62,16 @@ struct inst_t;
     }
 
 typedef enum type_t {
-    I,
-    I8,
-    I16,
-    I32,
-    I64,
+    TYPE_I,
+    TYPE_I8,
+    TYPE_I16,
+    TYPE_I32,
+    TYPE_I64,
 
-    F,
-    F32,
-    F64,
-    F96
+    TYPE_F,
+    TYPE_F32,
+    TYPE_F64,
+    TYPE_F96
 } type_t;
 
 typedef union value_t {
@@ -140,41 +141,91 @@ void f() {
     inst_array_t * insts = inst_array_new();
     object_array_t * regs = object_array_new();
 
-    #define insts_append(OP, OPERANDS) \
+    #define INSTS_APPEND(OP, OPERANDS) \
         inst_array_append(insts, (inst_t){.op = &&OP, .operands = OPERANDS})
 
+    #define MAKE_CMP_OP(name, op) \
+        name: \
+            switch(regs->items[inst->operands.uuu.b].t) { \
+                case TYPE_I64: \
+                    switch(regs->items[inst->operands.uuu.c].t) { \
+                        case TYPE_I64: \
+                            regs->items[inst->operands.uuu.a] = (object_t){ \
+                                .t = TYPE_I64, \
+                                .v = (value_t){.i64 = ( \
+                                    regs->items[inst->operands.uuu.b].v.i64 op \
+                                    regs->items[inst->operands.uuu.c].v.i64 \
+                                )} \
+                            }; \
+                            break; \
+                        default: \
+                            ; \
+                    } \
+                    break; \
+                default: \
+                    ; \
+            } \
+            DISPATCH;
+
     // insttructions
-    insts_append(int_const, ((operands_t){.ui = {0, 10}}));         // a = 10
-    insts_append(int_const, ((operands_t){.ui = {1, 2}}));          // b = 2
-    insts_append(int_const, ((operands_t){.ui = {2, 200000000}}));  // c = 200000000
-    insts_append(int_const, ((operands_t){.ui = {3, 7}}));          // d = 7
-    insts_append(int_const, ((operands_t){.ui = {4, 1}}));          // e = 1
-    insts_append(int_const, ((operands_t){.ui = {5, 0}}));          // f = 0
-    insts_append(mov, ((operands_t){.uu = {6, 0}}));                // i = a
-    insts_append(jlt, ((operands_t){.uui = {6,   2,  16}}));        // while (i < c) {
-    insts_append(mod, ((operands_t){.uuu = {7,   6,   3}}));        //   r7 = i % d
-    insts_append(jeq, ((operands_t){.uui = {7,   5,  10}}));        //   if (r7 == f) {
-    insts_append(jlt, ((operands_t){.uui = {6,   2,   7}}));        //     while (i < c) {
-    insts_append(add, ((operands_t){.uuu = {6,   6,   4}}));        //       i += e
-    insts_append(mod, ((operands_t){.uuu = {8,   6,   3}}));        //       r8 = i % d
-    insts_append(jeq, ((operands_t){.uui = {8,   5,   2}}));        //       if (r8 == f) {
-    insts_append(jmp, ((operands_t){.i = {3}}));                    //         break
-    insts_append(nop, {});                                          //       }
-    insts_append(jmp, ((operands_t){.i = {-6}}));                   //
-    insts_append(nop, {});                                          //     }
-    insts_append(jmp, ((operands_t){.i = {3}}));                    //
-    insts_append(nop, {});                                          //   } else {
-    insts_append(add, ((operands_t){.uuu = {6,   6,   1}}));        //     i += b
-    insts_append(nop, {});                                          //   }
-    insts_append(jmp, ((operands_t){.i = {-15}}));                  //
-    insts_append(end, {});                                          // }
+    // INSTS_APPEND(int_const, ((operands_t){.ui = {0, 10}}));         // a = 10
+    // INSTS_APPEND(int_const, ((operands_t){.ui = {1, 2}}));          // b = 2
+    // INSTS_APPEND(int_const, ((operands_t){.ui = {2, 200000000}}));  // c = 200000000
+    // INSTS_APPEND(int_const, ((operands_t){.ui = {3, 7}}));          // d = 7
+    // INSTS_APPEND(int_const, ((operands_t){.ui = {4, 1}}));          // e = 1
+    // INSTS_APPEND(int_const, ((operands_t){.ui = {5, 0}}));          // f = 0
+    // INSTS_APPEND(mov, ((operands_t){.uu = {6, 0}}));                // i = a
+    // INSTS_APPEND(jlt, ((operands_t){.uui = {6, 2, 16}}));           // while (i < c) {
+    // INSTS_APPEND(mod, ((operands_t){.uuu = {7, 6, 3}}));            //   r7 = i % d
+    // INSTS_APPEND(jeq, ((operands_t){.uui = {7, 5, 10}}));           //   if (r7 == f) {
+    // INSTS_APPEND(jlt, ((operands_t){.uui = {6, 2, 7}}));            //     while (i < c) {
+    // INSTS_APPEND(add, ((operands_t){.uuu = {6, 6, 4}}));            //       i += e
+    // INSTS_APPEND(mod, ((operands_t){.uuu = {8, 6, 3}}));            //       r8 = i % d
+    // INSTS_APPEND(jeq, ((operands_t){.uui = {8, 5, 2}}));            //       if (r8 == f) {
+    // INSTS_APPEND(jmp, ((operands_t){.i = {3}}));                    //         break
+    // INSTS_APPEND(nop, {});                                          //       }
+    // INSTS_APPEND(jmp, ((operands_t){.i = {-6}}));                   //
+    // INSTS_APPEND(nop, {});                                          //     }
+    // INSTS_APPEND(jmp, ((operands_t){.i = {3}}));                    //
+    // INSTS_APPEND(nop, {});                                          //   } else {
+    // INSTS_APPEND(add, ((operands_t){.uuu = {6, 6, 1}}));            //     i += b
+    // INSTS_APPEND(nop, {});                                          //   }
+    // INSTS_APPEND(jmp, ((operands_t){.i = {-15}}));                  //
+    // INSTS_APPEND(end, {});                                          // }
+
+    INSTS_APPEND(int_const, ((operands_t){.ui = {0, 10}}));         // a = 10
+    INSTS_APPEND(int_const, ((operands_t){.ui = {1, 2}}));          // b = 2
+    INSTS_APPEND(int_const, ((operands_t){.ui = {2, 200000000}}));  // c = 200000000
+    INSTS_APPEND(int_const, ((operands_t){.ui = {3, 7}}));          // d = 7
+    INSTS_APPEND(int_const, ((operands_t){.ui = {4, 1}}));          // e = 1
+    INSTS_APPEND(int_const, ((operands_t){.ui = {5, 0}}));          // f = 0
+    INSTS_APPEND(mov, ((operands_t){.uu = {6, 0}}));                // i = a
+    INSTS_APPEND(lt, ((operands_t){.uuu = {9, 6, 2}}));             // r9 = (i < c)
+    INSTS_APPEND(jeq, ((operands_t){.uui = {9, 4, 17}}));           // while (r9) {
+    INSTS_APPEND(mod, ((operands_t){.uuu = {7, 6, 3}}));            //   r7 = i % d
+    INSTS_APPEND(jeq, ((operands_t){.uui = {7, 5, 11}}));           //   if (r7 == f) {
+    INSTS_APPEND(lt, ((operands_t){.uuu = {10, 6, 2}}));            //     r10 = (i < c)
+    INSTS_APPEND(jeq, ((operands_t){.uui = {10, 4, 7}}));           //     while (r10) {
+    INSTS_APPEND(add, ((operands_t){.uuu = {6, 6, 4}}));            //       i += e
+    INSTS_APPEND(mod, ((operands_t){.uuu = {8, 6, 3}}));            //       r8 = i % d
+    INSTS_APPEND(jeq, ((operands_t){.uui = {8, 5, 2}}));            //       if (r8 == f) {
+    INSTS_APPEND(jmp, ((operands_t){.i = {3}}));                    //         break
+    INSTS_APPEND(nop, {});                                          //       }
+    INSTS_APPEND(jmp, ((operands_t){.i = {-7}}));                   //
+    INSTS_APPEND(nop, {});                                          //     }
+    INSTS_APPEND(jmp, ((operands_t){.i = {3}}));                    //
+    INSTS_APPEND(nop, {});                                          //   } else {
+    INSTS_APPEND(add, ((operands_t){.uuu = {6, 6, 1}}));            //     i += b
+    INSTS_APPEND(nop, {});                                          //   }
+    INSTS_APPEND(jmp, ((operands_t){.i = {-17}}));                  //
+    INSTS_APPEND(end, {});                                          // }
 
     // goto first inst
     inst_t * inst = insts->items;
     goto *inst->op;
 
     int_const:
-        regs->items[inst->operands.ui.a] = (object_t){.t = I64, .v = (value_t){.i64 = inst->operands.ui.b}};
+        regs->items[inst->operands.ui.a] = (object_t){.t = TYPE_I64, .v = (value_t){.i64 = inst->operands.ui.b}};
         DISPATCH;
     
     mov:
@@ -186,11 +237,10 @@ void f() {
     
     jlt:
         switch(regs->items[inst->operands.uui.a].t) {
-            case I64:
+            case TYPE_I64:
                 switch(regs->items[inst->operands.uui.b].t) {
-                    case I64:
+                    case TYPE_I64:
                         if (regs->items[inst->operands.uui.a].v.i64 < regs->items[inst->operands.uui.b].v.i64) {
-                        // if (__builtin_expect(regs->items[inst->operands.uui.a].v.i64 < regs->items[inst->operands.uui.b].v.i64, 1)) {
                             DISPATCH;
                         } else {
                             DISPATCH_JUMP(inst->operands.uui.c);
@@ -208,11 +258,10 @@ void f() {
 
     jeq:
         switch(regs->items[inst->operands.uui.a].t) {
-            case I64:
+            case TYPE_I64:
                 switch(regs->items[inst->operands.uui.b].t) {
-                    case I64:
+                    case TYPE_I64:
                         if (regs->items[inst->operands.uui.a].v.i64 == regs->items[inst->operands.uui.b].v.i64) {
-                        // if (__builtin_expect(regs->items[inst->operands.uui.a].v.i64 == regs->items[inst->operands.uui.b].v.i64, 1)) {
                             DISPATCH;
                         } else {
                             DISPATCH_JUMP(inst->operands.uui.c);
@@ -228,12 +277,171 @@ void f() {
                 ;
         }
 
+    jne:
+        switch(regs->items[inst->operands.uui.a].t) {
+            case TYPE_I64:
+                switch(regs->items[inst->operands.uui.b].t) {
+                    case TYPE_I64:
+                        if (regs->items[inst->operands.uui.a].v.i64 != regs->items[inst->operands.uui.b].v.i64) {
+                            DISPATCH;
+                        } else {
+                            DISPATCH_JUMP(inst->operands.uui.c);
+                        }
+
+                        break;
+                    default:
+                        ;
+                }
+
+                break;
+            default:
+                ;
+        }
+
+    // lt:
+    //     switch(regs->items[inst->operands.uuu.b].t) {
+    //         case TYPE_I64:
+    //             switch(regs->items[inst->operands.uuu.c].t) {
+    //                 case TYPE_I64:
+    //                     regs->items[inst->operands.uuu.a] = (object_t){
+    //                         .t = TYPE_I64,
+    //                         .v = (value_t){.i64 = (
+    //                             regs->items[inst->operands.uuu.b].v.i64 <
+    //                             regs->items[inst->operands.uuu.c].v.i64
+    //                         )}
+    //                     };
+                        
+    //                     break;
+    //                 default:
+    //                     ;
+    //             }
+
+    //             break;
+    //         default:
+    //             ;
+    //     }
+
+    //     DISPATCH;
+
+    // eq:
+    //     switch(regs->items[inst->operands.uuu.b].t) {
+    //         case TYPE_I64:
+    //             switch(regs->items[inst->operands.uuu.c].t) {
+    //                 case TYPE_I64:
+    //                     regs->items[inst->operands.uuu.a] = (object_t){
+    //                         .t = TYPE_I64,
+    //                         .v = (value_t){.i64 = (
+    //                             regs->items[inst->operands.uuu.b].v.i64 ==
+    //                             regs->items[inst->operands.uuu.c].v.i64
+    //                         )}
+    //                     };
+
+    //                     break;
+    //                 default:
+    //                     ;
+    //             }
+
+    //             break;
+    //         default:
+    //             ;
+    //     }
+
+    //     DISPATCH;
+
+    MAKE_CMP_OP(lt, <)
+    MAKE_CMP_OP(le, <=)
+    MAKE_CMP_OP(gt, >)
+    MAKE_CMP_OP(ge, >=)
+    MAKE_CMP_OP(eq, ==)
+    MAKE_CMP_OP(ne, !=)
+    
     add:
-        switch(regs->items[inst->operands.uuu.a].t) {
-            case I64:
-                switch(regs->items[inst->operands.uuu.b].t) {
-                    case I64:
-                        regs->items[inst->operands.uuu.a].v.i64 = regs->items[inst->operands.uuu.b].v.i64 + regs->items[inst->operands.uuu.c].v.i64;
+        switch(regs->items[inst->operands.uuu.b].t) {
+            case TYPE_I64:
+                switch(regs->items[inst->operands.uuu.c].t) {
+                    case TYPE_I64:
+                        regs->items[inst->operands.uuu.a] = (object_t){
+                            .t = TYPE_I64,
+                            .v = (value_t){.i64 = (
+                                regs->items[inst->operands.uuu.b].v.i64 +
+                                regs->items[inst->operands.uuu.c].v.i64
+                            )}
+                        };
+
+                        break;
+                    default:
+                        ;
+                }
+
+                break;
+            default:
+                ;
+        }
+
+        DISPATCH;
+
+    sub:
+        switch(regs->items[inst->operands.uuu.b].t) {
+            case TYPE_I64:
+                switch(regs->items[inst->operands.uuu.c].t) {
+                    case TYPE_I64:
+                        regs->items[inst->operands.uuu.a] = (object_t){
+                            .t = TYPE_I64,
+                            .v = (value_t){.i64 = (
+                                regs->items[inst->operands.uuu.b].v.i64 -
+                                regs->items[inst->operands.uuu.c].v.i64
+                            )}
+                        };
+
+                        break;
+                    default:
+                        ;
+                }
+
+                break;
+            default:
+                ;
+        }
+
+        DISPATCH;
+
+    mul:
+        switch(regs->items[inst->operands.uuu.b].t) {
+            case TYPE_I64:
+                switch(regs->items[inst->operands.uuu.c].t) {
+                    case TYPE_I64:
+                        regs->items[inst->operands.uuu.a] = (object_t){
+                            .t = TYPE_I64,
+                            .v = (value_t){.i64 = (
+                                regs->items[inst->operands.uuu.b].v.i64 *
+                                regs->items[inst->operands.uuu.c].v.i64
+                            )}
+                        };
+
+                        break;
+                    default:
+                        ;
+                }
+
+                break;
+            default:
+                ;
+        }
+
+        DISPATCH;
+
+    div:
+        switch(regs->items[inst->operands.uuu.b].t) {
+            case TYPE_I64:
+                switch(regs->items[inst->operands.uuu.c].t) {
+                    case TYPE_I64:
+                        regs->items[inst->operands.uuu.a] = (object_t){
+                            .t = TYPE_I64,
+                            .v = (value_t){.i64 = (
+                                regs->items[inst->operands.uuu.b].v.i64 /
+                                regs->items[inst->operands.uuu.c].v.i64
+                            )}
+                        };
 
                         break;
                     default:
@@ -248,11 +456,17 @@ void f() {
         DISPATCH;
 
     mod:
-        switch(regs->items[inst->operands.uuu.a].t) {
-            case I64:
-                switch(regs->items[inst->operands.uuu.b].t) {
-                    case I64:
-                        regs->items[inst->operands.uuu.a].v.i64 = regs->items[inst->operands.uuu.b].v.i64 % regs->items[inst->operands.uuu.c].v.i64;
+        switch(regs->items[inst->operands.uuu.b].t) {
+            case TYPE_I64:
+                switch(regs->items[inst->operands.uuu.c].t) {
+                    case TYPE_I64:
+                        regs->items[inst->operands.uuu.a] = (object_t){
+                            .t = TYPE_I64,
+                            .v = (value_t){.i64 = (
+                                regs->items[inst->operands.uuu.b].v.i64 %
+                                regs->items[inst->operands.uuu.c].v.i64
+                            )}
+                        };
 
                         break;
                     default:

@@ -1,5 +1,9 @@
 // gcc -O4 -c vm1.c && gcc -o vm1 vm1.o && time ./vm1
 // clang -O4 -c vm1.c && clang -o vm1 vm1.o && time ./vm1
+//
+// gcc -O2 -fprofile-generate -c vm1.c && gcc -fprofile-generate -o vm1 vm1.o && time ./vm1 && gcc -O2 -fprofile-use -c vm1.c && gcc -o vm1 vm1.o && time ./vm1
+// gcc -O3 -fprofile-generate -c vm1.c && gcc -fprofile-generate -o vm1 vm1.o && time ./vm1 && gcc -O3 -fprofile-use -c vm1.c && gcc -o vm1 vm1.o && time ./vm1
+// gcc -O4 -fprofile-generate -c vm1.c && gcc -fprofile-generate -o vm1 vm1.o && time ./vm1 && gcc -O4 -fprofile-use -c vm1.c && gcc -o vm1 vm1.o && time ./vm1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -96,7 +100,6 @@ void f() {
 
     // goto first inst
     inst_t * inst = insts->items;
-    // inst_t * inst = &insts->items[0];
     goto *inst->op;
 
     int_const:
