@@ -6,6 +6,7 @@ struct code_t * code_new(void) {
     s->regs = reg_array_new();
     s->vars = var_reg_map_new();
     s->n_regs = 0;
+    s->blocks = inst_array_new();
     return s;
 }
 
@@ -13,6 +14,7 @@ void code_del(struct code_t * s) {
     reg_array_del(s->regs);
     inst_array_del(s->insts);
     var_reg_map_del(s->vars);
+    inst_array_del(s->blocks);
     free(s);
 }
 
@@ -24,12 +26,12 @@ struct inst_t code_insts_get(struct code_t * s, int64_t inst_index) {
 }
 
 void code_insts_set(struct code_t * s, int64_t inst_index, enum op_t op, int64_t a, int64_t b, int64_t c) {
-    inst_array_setitem(s->insts, inst_index, (inst_t){op, NULL, a, b, c});
+    inst_array_setitem(s->insts, inst_index, (inst_t){inst_index, op, NULL, a, b, c});
 }
 
 int64_t code_insts_append(struct code_t * s, enum op_t op, int64_t a, int64_t b, int64_t c) {
     int64_t inst_index = s->insts->len;
-    inst_array_append(s->insts, (inst_t){op, NULL, a, b, c});
+    inst_array_append(s->insts, (inst_t){inst_index, op, NULL, a, b, c});
     return inst_index;
 }
 
@@ -53,31 +55,52 @@ void code_mov(struct code_t * s, int64_t a, int64_t b) {
 }
 
 int64_t code_lt(struct code_t * s, int64_t a, int64_t b) {
-    return 0;
+    int64_t reg_index = s->n_regs++;
+    code_insts_append(s, LT, reg_index, a, b);
+    return reg_index;
 }
 
 int64_t code_eq(struct code_t * s, int64_t a, int64_t b) {
-    return 0;
+    int64_t reg_index = s->n_regs++;
+    code_insts_append(s, EQ, reg_index, a, b);
+    return reg_index;
 }
 
 void code_if(struct code_t * s, int64_t a) {
-
+    // #ifdef NEW_APPROACH
+    
+    // #endif
 }
 
 void code_elif(struct code_t * s, int64_t a) {
-
+    // #ifdef NEW_APPROACH
+    
+    // #endif
 }
 
 void code_else(struct code_t * s) {
-
+    // #ifdef NEW_APPROACH
+    
+    // #endif
 }
 
 void code_while(struct code_t * s, int64_t a) {
+    // #ifdef NEW_APPROACH
+    
+    struct inst_t inst = inst_array_getitem(s->insts, s->insts->len - 1);
+    inst_array_append(s->blocks, inst);
 
+    // #endif
 }
 
 void code_end(struct code_t * s) {
+    // #ifdef NEW_APPROACH
+    
+    // add JMP back
 
+    struct inst_t inst = inst_array_pop(s->blocks);
+
+    // #endif
 }
 
 /*

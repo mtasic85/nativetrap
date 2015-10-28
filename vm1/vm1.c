@@ -96,6 +96,7 @@ void f() {
 
     // goto first inst
     inst_t * inst = insts->items;
+    // inst_t * inst = &insts->items[0];
     goto *inst->op;
 
     int_const:

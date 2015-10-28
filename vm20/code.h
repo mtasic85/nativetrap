@@ -21,6 +21,7 @@
 
 enum op_t;
 struct code_t;
+enum inst_stmt_t;
 struct inst_t;
 enum type_t;
 union value_t;
@@ -45,11 +46,40 @@ typedef struct code_t {
     struct reg_array_t * regs;
     struct var_reg_map_t * vars;
     int64_t n_regs;
+    struct inst_array_t * blocks;
 } code_t;
 
+typedef enum inst_stmt_t {
+    INST_STMT_NONE,
+    INST_STMT_IF,
+    INST_STMT_ELIF,
+    INST_STMT_ELSE,
+    INST_STMT_WHILE
+} inst_stmt_t;
+
+typedef struct ll_operands_uuu {
+    uint64_t a;
+    uint64_t b;
+    uint64_t c;
+} ll_operands_uuu;
+
+typedef union ll_operands_t {
+    struct ll_operands_uuu;
+    struct ll_operands_ui;
+    struct ll_operands_uf;
+    struct ll_operands_uui;
+} ll_operands_t;
+
+typedef struct ll_inst_t {
+    void * opcode;                  // vm-level OPCODE used in exec
+    union ll_operands_t operands;   // vm-level OPERANDS used in exec
+} ll_inst_t;
+
 typedef struct inst_t {
-    enum op_t op;
-    void * op_addr;
+    size_t index;           // index in insts array
+    // enum inst_stmt_t stmt;  // stmt type
+    enum op_t op;           // user-level OP CODE
+    void * op_addr;         // vm-level OP ADDRESS used in exec
     int64_t a;
     int64_t b;
     int64_t c;
