@@ -61,6 +61,68 @@ struct inst_t;
         return s->items[--s->len]; \
     }
 
+// map factory
+#define MAKE_MAP(prefix, key_type, value_type) \
+    struct prefix ## _map_t; \
+    struct prefix ## _map_item_t; \
+    \
+    typedef struct prefix ## _map_item_t { \
+        key_type key; \
+        value_type value; \
+    } prefix ## _map_item_t; \
+    \
+    typedef struct prefix ## _map_t { \
+        size_t cap; \
+        size_t len; \
+        prefix ## _map_item_t * items; \
+    } prefix ## _map_t; \
+    \
+    INLINE prefix ## _map_t * prefix ## _map_new(void) { \
+        prefix ## _map_t * s = (prefix ## _map_t *) malloc(sizeof(prefix ## _map_t)); \
+        s->cap = 32u; \
+        s->len = 0u; \
+        s->items = (prefix ## _map_item_t *) malloc(s->cap * sizeof(prefix ## _map_item_t)); \
+        return s; \
+    } \
+    \
+    INLINE void prefix ## _map_del(prefix ## _map_t * s) { \
+        free(s->items); \
+        free(s); \
+    } \
+    \
+    INLINE bool prefix ## _map_hasitem(prefix ## _map_t * s, key_type key) { \
+        unsigned int i; \
+        prefix ## _map_item_t item; \
+        bool found = false; \
+        for (i = 0; i < s->len; i++) { \
+            item = s->items[i]; \
+            if (item.key == key) { \
+                found = true; \
+                break; \
+            } \
+        } \
+        return found; \
+    } \
+    \
+    INLINE value_type prefix ## _map_getitem(prefix ## _map_t * s, key_type key) { \
+        unsigned int i; \
+        prefix ## _map_item_t item; \
+        for (i = 0; i < s->len; i++) { \
+            item = s->items[i]; \
+            if (item.key == key) { \
+                break; \
+            } \
+        } \
+        return item.value; \
+    } \
+    \
+    INLINE void prefix ## _map_setitem(prefix ## _map_t * s, key_type key, value_type value) { \
+        prefix ## _map_item_t item; \
+        item.key = key; \
+        item.value = value; \
+        s->items[s->len++] = item; \
+    }
+
 //
 // types/objects (regs)
 //
@@ -345,13 +407,6 @@ void f() {
     MAKE_CONST_OP(op_u32_const, uu32, TYPE_U32, u32)
     MAKE_CONST_OP(op_u64_const, uu64, TYPE_U64, u64)
 
-    op_mov:
-        regs->items[inst->operands.uu.a] = regs->items[inst->operands.uu.b];
-        DISPATCH;
-    
-    op_jmp:
-        DISPATCH_JUMP(inst->operands.i.a);
-    
     MAKE_UN_OP(op_neg, -)
     MAKE_UN_OP(op_pos, +)
     MAKE_UN_OP(op_not, !)
@@ -381,6 +436,13 @@ void f() {
     MAKE_JMP_CMP_OP(op_jge, >=)
     MAKE_JMP_CMP_OP(op_jeq, ==)
     MAKE_JMP_CMP_OP(op_jne, !=)
+
+    op_mov:
+        regs->items[inst->operands.uu.a] = regs->items[inst->operands.uu.b];
+        DISPATCH;
+    
+    op_jmp:
+        DISPATCH_JUMP(inst->operands.i.a);
 
     op_nop:
         DISPATCH;
