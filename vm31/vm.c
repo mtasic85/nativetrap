@@ -398,7 +398,10 @@ struct vm_t * vm_new(void) {
 }
 
 void vm_del(struct vm_t * vm) {
+    // main_thread
     thread_del_main(vm->main_thread);
+    vm->main_thread = NULL;
+
     free(vm);
 }
 
@@ -445,7 +448,10 @@ struct code_t * code_new(void) {
 }
 
 void code_del(struct code_t * code) {
+    // insts
     inst_array_del(code->insts);
+    code->insts = NULL;
+
     free(code);
 }
 
@@ -637,7 +643,6 @@ object_t * frame_exec(struct frame_t * frame) {
     
 
     // goto first inst
-    // inst_t * inst = insts->items;
     inst = insts->items;
     goto *inst->opcode.addr;
 
@@ -710,7 +715,7 @@ int main(int argc, char ** argv) {
     
     // code
     code_t * code = code_new();
-    code_append_inst(code, OP_I64_CONST, ((operands_t){.ui64 = {0, 10}}));        // a = 10
+    code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {0, 10}});        // a = 10
     code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {1, 2}});         // b = 2
     code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {2, 200000000}}); // c = 200000000
     code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {3, 7}});         // d = 7
