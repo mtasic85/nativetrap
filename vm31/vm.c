@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <pthread.h>
 
 #define INLINE static __inline__
@@ -31,6 +32,10 @@ struct operands_uu8_t;
 struct operands_uu16_t;
 struct operands_uu32_t;
 struct operands_uu64_t;
+struct operands_uf_t;
+struct operands_uf32_t;
+struct operands_uf64_t;
+struct operands_uf96_t;
 struct operands_i_t;
 struct operands_uui_t;
 struct operands_uuu_t;
@@ -203,6 +208,10 @@ typedef enum opcode_name_t {
     OP_U16_CONST,
     OP_U32_CONST,
     OP_U64_CONST,
+    OP_F_CONST,
+    OP_F32_CONST,
+    OP_F64_CONST,
+    OP_F96_CONST,
 
     OP_NEG,
     OP_POS,
@@ -296,6 +305,26 @@ typedef struct operands_uu64_t {
     uint64_t b;
 } operands_uu64_t;
 
+typedef struct operands_uf_t {
+    unsigned int a;
+    float b;
+} operands_uf_t;
+
+typedef struct operands_uf32_t {
+    unsigned int a;
+    float b;
+} operands_uf32_t;
+
+typedef struct operands_uf64_t {
+    unsigned int a;
+    double b;
+} operands_uf64_t;
+
+typedef struct operands_uf96_t {
+    unsigned int a;
+    long double b;
+} operands_uf96_t;
+
 typedef struct operands_i_t {
     int a;
 } operands_i_t;
@@ -323,6 +352,10 @@ typedef union operands_t {
     struct operands_uu16_t uu16;
     struct operands_uu32_t uu32;
     struct operands_uu64_t uu64;
+    struct operands_uf_t uf;
+    struct operands_uf32_t uf32;
+    struct operands_uf64_t uf64;
+    struct operands_uf96_t uf96;
     struct operands_i_t i;
     struct operands_uui_t uui;
     struct operands_uuu_t uuu;
@@ -335,6 +368,7 @@ typedef struct inst_t {
 
 MAKE_ARRAY(object, object_t);
 MAKE_ARRAY(inst, inst_t);
+MAKE_MAP(var_reg, char *, size_t);
 
 //
 // vm
@@ -358,6 +392,7 @@ typedef struct thread_t {
 //
 typedef struct code_t {
     inst_array_t * insts;
+    var_reg_map_t * vars;
 } code_t;
 
 //
@@ -382,7 +417,7 @@ void thread_del_main(struct thread_t * thread);
 
 struct code_t * code_new(void);
 void code_del(struct code_t * code);
-void code_append_inst(struct code_t * code, enum opcode_name_t opcode_name, union operands_t operands);
+size_t code_append_inst(struct code_t * code, enum opcode_name_t opcode_name, union operands_t operands);
 
 struct frame_t * frame_new(struct vm_t * vm, struct thread_t * thread, struct frame_t * prev_frame, struct code_t * code);
 void frame_del(struct frame_t * frame);
@@ -444,6 +479,7 @@ void thread_del_main(struct thread_t * thread) {
 struct code_t * code_new(void) {
     struct code_t * code = (struct code_t *)malloc(sizeof(struct code_t));
     code->insts = inst_array_new();
+    code->vars = var_reg_map_new();
     return code;
 }
 
@@ -452,11 +488,17 @@ void code_del(struct code_t * code) {
     inst_array_del(code->insts);
     code->insts = NULL;
 
+    // vars
+    var_reg_map_del(code->vars);
+    code->vars = NULL;
+
     free(code);
 }
 
-void code_append_inst(struct code_t * code, enum opcode_name_t opcode_name, union operands_t operands) {
+size_t code_append_inst(struct code_t * code, enum opcode_name_t opcode_name, union operands_t operands) {
+    size_t inst_index = code->insts->len;
     inst_array_append(code->insts, (inst_t){.opcode = {.name = opcode_name}, .operands = operands});
+    return inst_index;
 }
 
 //
@@ -506,6 +548,10 @@ object_t * frame_exec(struct frame_t * frame) {
         &&op_u16_const,
         &&op_u32_const,
         &&op_u64_const,
+        &&op_f_const,
+        &&op_f32_const,
+        &&op_f64_const,
+        &&op_f96_const,
 
         &&op_neg,
         &&op_pos,
@@ -639,9 +685,7 @@ object_t * frame_exec(struct frame_t * frame) {
                 default: \
                     ; \
             }
-
     
-
     // goto first inst
     inst = insts->items;
     goto *inst->opcode.addr;
@@ -659,6 +703,10 @@ object_t * frame_exec(struct frame_t * frame) {
     MAKE_CONST_OP(op_u16_const, uu16, TYPE_U16, u16)
     MAKE_CONST_OP(op_u32_const, uu32, TYPE_U32, u32)
     MAKE_CONST_OP(op_u64_const, uu64, TYPE_U64, u64)
+    MAKE_CONST_OP(op_f_const, uf, TYPE_F, f)
+    MAKE_CONST_OP(op_f32_const, uf32, TYPE_F32, f32)
+    MAKE_CONST_OP(op_f64_const, uf64, TYPE_F64, f64)
+    MAKE_CONST_OP(op_f96_const, uf96, TYPE_F96, f96)
 
     MAKE_UN_OP(op_neg, -)
     MAKE_UN_OP(op_pos, +)
@@ -706,6 +754,82 @@ object_t * frame_exec(struct frame_t * frame) {
     return NULL;
 }
 
+size_t code_assign(struct code_t * code, char * var_name, struct object_t obj);
+
+size_t code_assign(struct code_t * code, char * var_name, struct object_t obj) {
+    bool has_var;
+    size_t reg_index;
+    size_t inst_index;
+
+    has_var = var_reg_map_hasitem(code->vars, var_name);
+    printf("has_var = %d; ", has_var);
+
+    if (has_var) {
+        reg_index = var_reg_map_getitem(code->vars, var_name);
+    } else {
+        reg_index = code->vars->len;
+        var_reg_map_setitem(code->vars, var_name, reg_index);
+    }
+
+    printf("reg_index = %zu\n", reg_index);
+
+    switch (obj.t) {
+        // int
+        case TYPE_I:
+            inst_index = code_append_inst(code, OP_I_CONST, (operands_t){.ui = {reg_index, obj.v.i}});
+            break;
+        case TYPE_I8:
+            inst_index = code_append_inst(code, OP_I8_CONST, (operands_t){.ui8 = {reg_index, obj.v.i8}});
+            break;
+        case TYPE_I16:
+            inst_index = code_append_inst(code, OP_I16_CONST, (operands_t){.ui16 = {reg_index, obj.v.i16}});
+            break;
+        case TYPE_I32:
+            inst_index = code_append_inst(code, OP_I32_CONST, (operands_t){.ui32 = {reg_index, obj.v.i32}});
+            break;
+        case TYPE_I64:
+            inst_index = code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {reg_index, obj.v.i64}});
+            break;
+
+        // uint
+        case TYPE_U:
+            inst_index = code_append_inst(code, OP_U_CONST, (operands_t){.uu = {reg_index, obj.v.u}});
+            break;
+        case TYPE_U8:
+            inst_index = code_append_inst(code, OP_U8_CONST, (operands_t){.uu8 = {reg_index, obj.v.u8}});
+            break;
+        case TYPE_U16:
+            inst_index = code_append_inst(code, OP_U16_CONST, (operands_t){.uu16 = {reg_index, obj.v.u16}});
+            break;
+        case TYPE_U32:
+            inst_index = code_append_inst(code, OP_U32_CONST, (operands_t){.uu32 = {reg_index, obj.v.u32}});
+            break;
+        case TYPE_U64:
+            inst_index = code_append_inst(code, OP_U64_CONST, (operands_t){.uu64 = {reg_index, obj.v.u64}});
+            break;
+
+        // float
+        case TYPE_F:
+            inst_index = code_append_inst(code, OP_F_CONST, (operands_t){.uf = {reg_index, obj.v.f}});
+            break;
+        case TYPE_F32:
+            inst_index = code_append_inst(code, OP_F32_CONST, (operands_t){.uf32 = {reg_index, obj.v.f32}});
+            break;
+        case TYPE_F64:
+            inst_index = code_append_inst(code, OP_F64_CONST, (operands_t){.uf64 = {reg_index, obj.v.f64}});
+            break;
+        case TYPE_F96:
+            inst_index = code_append_inst(code, OP_F96_CONST, (operands_t){.uf96 = {reg_index, obj.v.f96}});
+            break;
+
+        default:
+            printf("Unsupported object type: %u\n", obj.t);
+            exit(1);
+    }
+
+    return reg_index;
+}
+
 int main(int argc, char ** argv) {
     // vm
     vm_t * vm = vm_new();
@@ -715,12 +839,20 @@ int main(int argc, char ** argv) {
     
     // code
     code_t * code = code_new();
-    code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {0, 10}});        // a = 10
-    code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {1, 2}});         // b = 2
-    code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {2, 200000000}}); // c = 200000000
-    code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {3, 7}});         // d = 7
-    code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {4, 1}});         // e = 1
-    code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {5, 0}});         // f = 0
+
+    
+    // code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {0, 10}});        // a = 10
+    // code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {1, 2}});         // b = 2
+    // code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {2, 200000000}}); // c = 200000000
+    // code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {3, 7}});         // d = 7
+    // code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {4, 1}});         // e = 1
+    // code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {5, 0}});         // f = 0
+    code_assign(code, "a", (object_t){.t = TYPE_I64, .v = {.i64 = 10}});
+    code_assign(code, "b", (object_t){.t = TYPE_I64, .v = {.i64 = 2}});
+    code_assign(code, "c", (object_t){.t = TYPE_I64, .v = {.i64 = 200000000}});
+    code_assign(code, "d", (object_t){.t = TYPE_I64, .v = {.i64 = 7}});
+    code_assign(code, "e", (object_t){.t = TYPE_I64, .v = {.i64 = 1}});
+    code_assign(code, "f", (object_t){.t = TYPE_I64, .v = {.i64 = 0}});
     code_append_inst(code, OP_MOV, (operands_t){.uu = {6, 0}});                 // i = a
     code_append_inst(code, OP_LT, (operands_t){.uuu = {9, 6, 2}});              // r9 = (i < c)
     code_append_inst(code, OP_JEQ, (operands_t){.uui = {9, 4, 17}});            // while (r9) {
@@ -741,7 +873,7 @@ int main(int argc, char ** argv) {
     code_append_inst(code, OP_NOP, (operands_t){});                             //   }
     code_append_inst(code, OP_JMP, (operands_t){.i = {-17}});                   //
     code_append_inst(code, OP_END, (operands_t){});                             // }
-    
+
     // frame
     frame_t * frame = frame_new(vm, thread, NULL, code);
     object_t * r = frame_exec(frame);
