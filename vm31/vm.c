@@ -237,6 +237,7 @@ typedef enum opcode_name_t {
     OP_EQ,
     OP_NE,
 
+    OP_JT,
     OP_JLT,
     OP_JLE,
     OP_JGT,
@@ -591,6 +592,7 @@ object_t * frame_exec(struct frame_t * frame) {
         &&op_eq,
         &&op_ne,
 
+        &&op_jt,
         &&op_jlt,
         &&op_jle,
         &&op_jgt,
@@ -746,6 +748,20 @@ object_t * frame_exec(struct frame_t * frame) {
     MAKE_CMP_OP(op_eq, ==)
     MAKE_CMP_OP(op_ne, !=)
 
+    op_jt:
+        switch(regs->items[inst->operands.ui.a].t) {
+            case TYPE_I64:
+                if (regs->items[inst->operands.ui.a].v.i64 == 1) {
+                    DISPATCH;
+                } else {
+                    DISPATCH_JUMP(inst->operands.ui.b);
+                }
+                
+                break;
+            default:
+                ;
+        }
+
     MAKE_JMP_CMP_OP(op_jlt, <)
     MAKE_JMP_CMP_OP(op_jle, <=)
     MAKE_JMP_CMP_OP(op_jgt, >)
@@ -778,7 +794,7 @@ size_t code_assign_const(struct code_t * code, char * var_name, struct object_t 
     size_t inst_index;
 
     has_var = var_reg_map_hasitem(code->vars, var_name);
-    printf("code_assign_const: has_var = %d; ", has_var);
+    printf("code_assign_const: var_name = %s, has_var = %d; ", var_name, has_var);
 
     if (has_var) {
         reg_index = var_reg_map_getitem(code->vars, var_name);
@@ -853,7 +869,7 @@ size_t code_assign(struct code_t * code, char * dest_var_name, char * src_var_na
     size_t inst_index;
 
     has_var = var_reg_map_hasitem(code->vars, src_var_name);
-    printf("code_assign: has_var = %d; ", has_var);
+    printf("code_assign: dest_var_name = %s, src_var_name = %s, has_var = %d; ", dest_var_name, src_var_name, has_var);
 
     if (!has_var) {
         printf("Variable \"%s\" could not be found\n", src_var_name);
@@ -875,7 +891,7 @@ size_t code_get_var_reg(struct code_t * code, char * var_name) {
     size_t inst_index;
 
     has_var = var_reg_map_hasitem(code->vars, var_name);
-    printf("code_get_var_reg: has_var = %d; ", has_var);
+    printf("code_get_var_reg: var_name = %s, has_var = %d; ", var_name, has_var);
 
     if (has_var) {
         reg_index = var_reg_map_getitem(code->vars, var_name);
@@ -907,8 +923,17 @@ size_t code_eq(struct code_t * code, size_t a, size_t b) {
 }
 
 size_t code_while(struct code_t * code, size_t a) {
-    size_t inst_index = 0;
-    struct inst_t * inst = NULL;
+    // size_t inst_index = 0;
+    // struct inst_t * inst = NULL;
+    // bool is_loop = true;
+    // fw_jump_t j = (fw_jump_t){.inst_index = inst_index, .inst = inst, .is_loop = is_loop};
+
+    // previous instruction is always CMP (comparison)
+    inst_t * prev_inst = &code->insts->items[code->insts->len - 1];
+    size_t prev_reg = prev_inst->operands.uui.a;
+
+    size_t inst_index = code_append_inst(code, OP_JT, (operands_t){.ui = {prev_reg, 0}});
+    struct inst_t * inst = &code->insts->items[code->insts->len - 1];
     bool is_loop = true;
     fw_jump_t j = (fw_jump_t){.inst_index = inst_index, .inst = inst, .is_loop = is_loop};
 }
@@ -926,6 +951,14 @@ size_t code_break(struct code_t * code) {
 }
 
 size_t code_end(struct code_t * code) {
+
+}
+
+size_t code_add(struct code_t * code, size_t a, size_t b) {
+
+}
+
+size_t code_mod(struct code_t * code, size_t a, size_t b) {
 
 }
 
@@ -976,7 +1009,7 @@ int main(int argc, char ** argv) {
     
     code_while(code, code_lt(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "c")));
         code_if(code, code_eq(code, code_mod(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "d")), code_get_var_reg(code, "f")));
-            code_while(code, code_eq(code, code_lt(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "c")), 4));
+            code_while(code, code_lt(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "c")));
                 code_assign(code, code_get_var_reg(code, "i"), code_add(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "e")));
                 code_if(code, code_eq(code, code_mod(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "d")), code_get_var_reg(code, "f")));
                     code_break(code);
@@ -986,7 +1019,7 @@ int main(int argc, char ** argv) {
             code_assign(code, code_get_var_reg(code, "i"), code_add(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "b")));
         code_end(code);
     code_end(code);
-
+    
     // frame
     frame_t * frame = frame_new(vm, thread, NULL, code);
     object_t * r = frame_exec(frame);
