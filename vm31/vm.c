@@ -392,10 +392,19 @@ typedef struct thread_t {
 //
 // code
 //
+typedef enum fw_jump_type_t {
+    FW_JUMP_IF,
+    FW_JUMP_ELIF,
+    FW_JUMP_ELSE,
+    FW_JUMP_WHILE,
+    FW_JUMP_BREAK,
+    FW_JUMP_CONTINUE
+} fw_jump_type_t;
+
 typedef struct fw_jump_t {
     size_t inst_index;
     struct inst_t * inst;
-    bool is_loop;
+    enum fw_jump_type_t type;
 } fw_jump_t;
 
 MAKE_ARRAY(fw_jump, fw_jump_t);
@@ -922,45 +931,65 @@ size_t code_eq(struct code_t * code, size_t a, size_t b) {
     return reg_index;
 }
 
-size_t code_while(struct code_t * code, size_t a) {
-    // size_t inst_index = 0;
-    // struct inst_t * inst = NULL;
-    // bool is_loop = true;
-    // fw_jump_t j = (fw_jump_t){.inst_index = inst_index, .inst = inst, .is_loop = is_loop};
+// size_t code_while(struct code_t * code, size_t a) {
+//     // previous instruction is always CMP (comparison)
+//     inst_t * prev_inst = &code->insts->items[code->insts->len - 1];
+//     size_t prev_reg = prev_inst->operands.uui.a;
 
-    // previous instruction is always CMP (comparison)
-    inst_t * prev_inst = &code->insts->items[code->insts->len - 1];
-    size_t prev_reg = prev_inst->operands.uui.a;
+//     // jump if test succeeded
+//     size_t inst_index = code_append_inst(code, OP_JT, (operands_t){.ui = {prev_reg, 0}});
+//     struct inst_t * inst = &code->insts->items[code->insts->len - 1];
+    
+//     // jump point
+//     fw_jump_t j = (fw_jump_t){.inst_index = inst_index, .inst = inst, .type = FW_JUMP_WHILE};
+//     size_t fw_jump_index = fw_jump_array_append(code->fw_jumps, j);
+// }
 
-    size_t inst_index = code_append_inst(code, OP_JT, (operands_t){.ui = {prev_reg, 0}});
-    struct inst_t * inst = &code->insts->items[code->insts->len - 1];
-    bool is_loop = true;
-    fw_jump_t j = (fw_jump_t){.inst_index = inst_index, .inst = inst, .is_loop = is_loop};
-}
+// size_t code_if(struct code_t * code, size_t a) {
+//     // previous instruction is always CMP (comparison)
+//     inst_t * prev_inst = &code->insts->items[code->insts->len - 1];
+//     size_t prev_reg = prev_inst->operands.uui.a;
 
-size_t code_if(struct code_t * code, size_t a) {
+//     // jump if test succeeded
+//     size_t inst_index = code_append_inst(code, OP_JT, (operands_t){.ui = {prev_reg, 0}});
+//     struct inst_t * inst = &code->insts->items[code->insts->len - 1];
+    
+//     // jump point
+//     fw_jump_t j = (fw_jump_t){.inst_index = inst_index, .inst = inst, .type = FW_JUMP_IF};
+//     size_t fw_jump_index = fw_jump_array_append(code->fw_jumps, j);
+// }
 
-}
+// size_t code_else(struct code_t * code) {
+//     // NOP op
+//     size_t inst_index = code_append_inst(code, OP_NOP, (operands_t){});
+//     struct inst_t * inst = &code->insts->items[code->insts->len - 1];
 
-size_t code_else(struct code_t * code) {
+//     // jump point
+//     fw_jump_t j = (fw_jump_t){.inst_index = inst_index, .inst = inst, .type = FW_JUMP_ELSE};
+//     size_t fw_jump_index = fw_jump_array_append(code->fw_jumps, j);
+// }
 
-}
+// size_t code_break(struct code_t * code) {
+//     // JMP op
+//     size_t inst_index = code_append_inst(code, OP_JMP, (operands_t){.i = {0}}});
+//     struct inst_t * inst = &code->insts->items[code->insts->len - 1];
+    
+//     // jump point
+//     fw_jump_t j = (fw_jump_t){.inst_index = inst_index, .inst = inst, .type = FW_JUMP_BREAK};
+//     size_t fw_jump_index = fw_jump_array_append(code->fw_jumps, j);
+// }
 
-size_t code_break(struct code_t * code) {
+// size_t code_end(struct code_t * code) {
+//     // FIXME: main part
+// }
 
-}
+// size_t code_add(struct code_t * code, size_t a, size_t b) {
 
-size_t code_end(struct code_t * code) {
+// }
 
-}
+// size_t code_mod(struct code_t * code, size_t a, size_t b) {
 
-size_t code_add(struct code_t * code, size_t a, size_t b) {
-
-}
-
-size_t code_mod(struct code_t * code, size_t a, size_t b) {
-
-}
+// }
 
 int main(int argc, char ** argv) {
     // vm
@@ -972,53 +1001,53 @@ int main(int argc, char ** argv) {
     // code
     code_t * code = code_new();
     
-    // code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {0, 10}});        // a = 10
-    // code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {1, 2}});         // b = 2
-    // code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {2, 200000000}}); // c = 200000000
-    // code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {3, 7}});         // d = 7
-    // code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {4, 1}});         // e = 1
-    // code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {5, 0}});         // f = 0
-    // code_append_inst(code, OP_MOV, (operands_t){.uu = {6, 0}});                 // i = a
-    // code_append_inst(code, OP_LT, (operands_t){.uuu = {9, 6, 2}});              // r9 = (i < c)
-    // code_append_inst(code, OP_JEQ, (operands_t){.uui = {9, 4, 17}});            // while (r9) {
-    // code_append_inst(code, OP_MOD, (operands_t){.uuu = {7, 6, 3}});             //   r7 = i % d
-    // code_append_inst(code, OP_JEQ, (operands_t){.uui = {7, 5, 11}});            //   if (r7 == f) {
-    // code_append_inst(code, OP_LT, (operands_t){.uuu = {10, 6, 2}});             //     r10 = (i < c)
-    // code_append_inst(code, OP_JEQ, (operands_t){.uui = {10, 4, 7}});            //     while (r10) {
-    // code_append_inst(code, OP_ADD, (operands_t){.uuu = {6, 6, 4}});             //       i += e
-    // code_append_inst(code, OP_MOD, (operands_t){.uuu = {8, 6, 3}});             //       r8 = i % d
-    // code_append_inst(code, OP_JEQ, (operands_t){.uui = {8, 5, 2}});             //       if (r8 == f) {
-    // code_append_inst(code, OP_JMP, (operands_t){.i = {3}});                     //         break
-    // code_append_inst(code, OP_NOP, (operands_t){});                             //       }
-    // code_append_inst(code, OP_JMP, (operands_t){.i = {-7}});                    //
-    // code_append_inst(code, OP_NOP, (operands_t){});                             //     }
-    // code_append_inst(code, OP_JMP, (operands_t){.i = {3}});                     //
-    // code_append_inst(code, OP_NOP, (operands_t){});                             //   } else {
-    // code_append_inst(code, OP_ADD, (operands_t){.uuu = {6, 6, 1}});             //     i += b
-    // code_append_inst(code, OP_NOP, (operands_t){});                             //   }
-    // code_append_inst(code, OP_JMP, (operands_t){.i = {-17}});                   //
-    // code_append_inst(code, OP_END, (operands_t){});                             // }
+    code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {0, 10}});        // a = 10
+    code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {1, 2}});         // b = 2
+    code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {2, 200000000}}); // c = 200000000
+    code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {3, 7}});         // d = 7
+    code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {4, 1}});         // e = 1
+    code_append_inst(code, OP_I64_CONST, (operands_t){.ui64 = {5, 0}});         // f = 0
+    code_append_inst(code, OP_MOV, (operands_t){.uu = {6, 0}});                 // i = a
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {9, 6, 2}});              // r9 = (i < c)
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {9, 4, 17}});            // while (r9) {
+    code_append_inst(code, OP_MOD, (operands_t){.uuu = {7, 6, 3}});             //   r7 = i % d
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {7, 5, 11}});            //   if (r7 == f) {
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {10, 6, 2}});             //     r10 = (i < c)
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {10, 4, 7}});            //     while (r10) {
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {6, 6, 4}});             //       i += e
+    code_append_inst(code, OP_MOD, (operands_t){.uuu = {8, 6, 3}});             //       r8 = i % d
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {8, 5, 2}});             //       if (r8 == f) {
+    code_append_inst(code, OP_JMP, (operands_t){.i = {3}});                     //         break
+    code_append_inst(code, OP_NOP, (operands_t){});                             //       }
+    code_append_inst(code, OP_JMP, (operands_t){.i = {-7}});                    //
+    code_append_inst(code, OP_NOP, (operands_t){});                             //     }
+    code_append_inst(code, OP_JMP, (operands_t){.i = {3}});                     //
+    code_append_inst(code, OP_NOP, (operands_t){});                             //   } else {
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {6, 6, 1}});             //     i += b
+    code_append_inst(code, OP_NOP, (operands_t){});                             //   }
+    code_append_inst(code, OP_JMP, (operands_t){.i = {-17}});                   //
+    code_append_inst(code, OP_END, (operands_t){});                             // }
 
-    code_assign_const(code, "a", (object_t){.t = TYPE_I64, .v = {.i64 = 10}});
-    code_assign_const(code, "b", (object_t){.t = TYPE_I64, .v = {.i64 = 2}});
-    code_assign_const(code, "c", (object_t){.t = TYPE_I64, .v = {.i64 = 200000000}});
-    code_assign_const(code, "d", (object_t){.t = TYPE_I64, .v = {.i64 = 7}});
-    code_assign_const(code, "e", (object_t){.t = TYPE_I64, .v = {.i64 = 1}});
-    code_assign_const(code, "f", (object_t){.t = TYPE_I64, .v = {.i64 = 0}});
-    code_assign(code, "i", "a");
+    // code_assign_const(code, "a", (object_t){.t = TYPE_I64, .v = {.i64 = 10}});
+    // code_assign_const(code, "b", (object_t){.t = TYPE_I64, .v = {.i64 = 2}});
+    // code_assign_const(code, "c", (object_t){.t = TYPE_I64, .v = {.i64 = 200000000}});
+    // code_assign_const(code, "d", (object_t){.t = TYPE_I64, .v = {.i64 = 7}});
+    // code_assign_const(code, "e", (object_t){.t = TYPE_I64, .v = {.i64 = 1}});
+    // code_assign_const(code, "f", (object_t){.t = TYPE_I64, .v = {.i64 = 0}});
+    // code_assign(code, "i", "a");
     
-    code_while(code, code_lt(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "c")));
-        code_if(code, code_eq(code, code_mod(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "d")), code_get_var_reg(code, "f")));
-            code_while(code, code_lt(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "c")));
-                code_assign(code, code_get_var_reg(code, "i"), code_add(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "e")));
-                code_if(code, code_eq(code, code_mod(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "d")), code_get_var_reg(code, "f")));
-                    code_break(code);
-                code_end(code);
-            code_end(code);
-        code_else(code);
-            code_assign(code, code_get_var_reg(code, "i"), code_add(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "b")));
-        code_end(code);
-    code_end(code);
+    // code_while(code, code_lt(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "c")));
+    //     code_if(code, code_eq(code, code_mod(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "d")), code_get_var_reg(code, "f")));
+    //         code_while(code, code_lt(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "c")));
+    //             code_assign(code, code_get_var_reg(code, "i"), code_add(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "e")));
+    //             code_if(code, code_eq(code, code_mod(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "d")), code_get_var_reg(code, "f")));
+    //                 code_break(code);
+    //             code_end(code);
+    //         code_end(code);
+    //     code_else(code);
+    //         code_assign(code, code_get_var_reg(code, "i"), code_add(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "b")));
+    //     code_end(code);
+    // code_end(code);
     
     // frame
     frame_t * frame = frame_new(vm, thread, NULL, code);
