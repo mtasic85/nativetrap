@@ -982,7 +982,7 @@ void code_end(struct code_t * code) {
     // NOP op
     size_t inst_index = code_append_inst(code, OP_NOP, (operands_t){});
     struct inst_t * inst = &code->insts->items[inst_index];
-    
+
     for (i = code->fw_jumps->len - 1; i >= 0; i--) {
         jump = &code->fw_jumps->items[i];
 
@@ -998,7 +998,7 @@ void code_end(struct code_t * code) {
                 break;
             case FW_JUMP_WHILE:
                 printf("FW_JUMP_WHILE\n");
-
+                jump->inst->operands.ui.b = jump->inst_index - inst_index - 1;
                 break;
             case FW_JUMP_BREAK:
                 printf("FW_JUMP_BREAK\n");
