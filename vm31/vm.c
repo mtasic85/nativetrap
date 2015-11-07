@@ -257,81 +257,12 @@ typedef union opcode_t {
     void * addr;
 } opcode_t;
 
-#define MAKE_OPERANDS(name, type1, type2)
+/*
+#define MAKE_OPERANDS(name, type1, type2) \
     typedef struct operands_## name ##_t { \
         type1 a; \
         type2 b; \
     } operands_## name ##_t;
-
-// typedef struct operands_ui_t {
-//     unsigned int a;
-//     int b;
-// } operands_ui_t;
-
-// typedef struct operands_ui8_t {
-//     unsigned int a;
-//     int8_t b;
-// } operands_ui8_t;
-
-// typedef struct operands_ui16_t {
-//     unsigned int a;
-//     int16_t b;
-// } operands_ui16_t;
-
-// typedef struct operands_ui32_t {
-//     unsigned int a;
-//     int32_t b;
-// } operands_ui32_t;
-
-// typedef struct operands_ui64_t {
-//     unsigned int a;
-//     int64_t b;
-// } operands_ui64_t;
-
-// typedef struct operands_uu_t {
-//     unsigned int a;
-//     unsigned int b;
-// } operands_uu_t;
-
-// typedef struct operands_uu8_t {
-//     unsigned int a;
-//     uint8_t b;
-// } operands_uu8_t;
-
-// typedef struct operands_uu16_t {
-//     unsigned int a;
-//     uint16_t b;
-// } operands_uu16_t;
-
-// typedef struct operands_uu32_t {
-//     unsigned int a;
-//     uint32_t b;
-// } operands_uu32_t;
-
-// typedef struct operands_uu64_t {
-//     unsigned int a;
-//     uint64_t b;
-// } operands_uu64_t;
-
-// typedef struct operands_uf_t {
-//     unsigned int a;
-//     float b;
-// } operands_uf_t;
-
-// typedef struct operands_uf32_t {
-//     unsigned int a;
-//     float b;
-// } operands_uf32_t;
-
-// typedef struct operands_uf64_t {
-//     unsigned int a;
-//     double b;
-// } operands_uf64_t;
-
-// typedef struct operands_uf96_t {
-//     unsigned int a;
-//     long double b;
-// } operands_uf96_t;
 
 MAKE_OPERANDS(ui, unsigned int, int);
 MAKE_OPERANDS(ui8, unsigned int, int8_t);
@@ -347,6 +278,77 @@ MAKE_OPERANDS(uf, int, float);
 MAKE_OPERANDS(uf32, int, float);
 MAKE_OPERANDS(uf64, int, double);
 MAKE_OPERANDS(uf96, int, long double);
+*/
+
+typedef struct operands_ui_t {
+    unsigned int a;
+    int b;
+} operands_ui_t;
+
+typedef struct operands_ui8_t {
+    unsigned int a;
+    int8_t b;
+} operands_ui8_t;
+
+typedef struct operands_ui16_t {
+    unsigned int a;
+    int16_t b;
+} operands_ui16_t;
+
+typedef struct operands_ui32_t {
+    unsigned int a;
+    int32_t b;
+} operands_ui32_t;
+
+typedef struct operands_ui64_t {
+    unsigned int a;
+    int64_t b;
+} operands_ui64_t;
+
+typedef struct operands_uu_t {
+    unsigned int a;
+    unsigned int b;
+} operands_uu_t;
+
+typedef struct operands_uu8_t {
+    unsigned int a;
+    uint8_t b;
+} operands_uu8_t;
+
+typedef struct operands_uu16_t {
+    unsigned int a;
+    uint16_t b;
+} operands_uu16_t;
+
+typedef struct operands_uu32_t {
+    unsigned int a;
+    uint32_t b;
+} operands_uu32_t;
+
+typedef struct operands_uu64_t {
+    unsigned int a;
+    uint64_t b;
+} operands_uu64_t;
+
+typedef struct operands_uf_t {
+    unsigned int a;
+    float b;
+} operands_uf_t;
+
+typedef struct operands_uf32_t {
+    unsigned int a;
+    float b;
+} operands_uf32_t;
+
+typedef struct operands_uf64_t {
+    unsigned int a;
+    double b;
+} operands_uf64_t;
+
+typedef struct operands_uf96_t {
+    unsigned int a;
+    long double b;
+} operands_uf96_t;
 
 typedef struct operands_i_t {
     int a;
