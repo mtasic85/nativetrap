@@ -800,16 +800,13 @@ size_t code_assign_const(struct code_t * code, char * var_name, struct object_t 
     size_t inst_index;
 
     has_var = var_reg_map_hasitem(code->vars, var_name);
-    // printf("code_assign_const: var_name = %s, has_var = %d; ", var_name, has_var);
-
+    
     if (has_var) {
         reg_index = var_reg_map_getitem(code->vars, var_name);
     } else {
         reg_index = code->vars->len;
         var_reg_map_setitem(code->vars, var_name, reg_index);
     }
-
-    // printf("reg_index = %zu\n", reg_index);
 
     switch (obj.t) {
         // int
@@ -877,8 +874,7 @@ size_t code_assign_var(struct code_t * code, char * dest_var_name, char * src_va
     size_t inst_index;
 
     has_var = var_reg_map_hasitem(code->vars, src_var_name);
-    // printf("code_assign: dest_var_name = %s, src_var_name = %s, has_var = %d; ", dest_var_name, src_var_name, has_var);
-
+    
     if (!has_var) {
         printf("code_assign_var: Variable \"%s\" could not be found\n", src_var_name);
         exit(1);
@@ -889,14 +885,12 @@ size_t code_assign_var(struct code_t * code, char * dest_var_name, char * src_va
     var_reg_map_setitem(code->vars, dest_var_name, dest_reg_index);
     inst_index = code_append_inst(code, OP_MOV, (operands_t){.uu = {dest_reg_index, src_reg_index}});
 
-    // printf("dest_reg_index = %zu, src_reg_index = %zu\n", dest_reg_index, src_reg_index);
     printf("code_assign_var: r[%zu] = r[%zu] ; var %s = var %s\n", dest_reg_index, src_reg_index, dest_var_name, src_var_name);
     return dest_reg_index;
 }
 
 size_t code_assign(struct code_t * code, size_t dest_reg_index, size_t src_reg_index) {
     size_t inst_index;
-    // printf("code_assign: dest_reg_index = %zu, src_reg_index = %zu\n", dest_reg_index, src_reg_index);
     inst_index = code_append_inst(code, OP_MOV, (operands_t){.uu = {dest_reg_index, src_reg_index}});
 
     printf("code_assign: r[%zu] = r[%zu]\n", dest_reg_index, src_reg_index);
@@ -910,16 +904,14 @@ size_t code_get_var_reg(struct code_t * code, char * var_name) {
     size_t inst_index;
 
     has_var = var_reg_map_hasitem(code->vars, var_name);
-    // printf("code_get_var_reg: var_name = %s, has_var = %d; ", var_name, has_var);
-
-    if (has_var) {
-        reg_index = var_reg_map_getitem(code->vars, var_name);
-    } else {
+    
+    if (!has_var) {
         printf("code_get_var_reg: Variable \"%s\" could not be found\n", var_name);
         exit(1);
     }
 
-    // printf("reg_index = %zu\n", reg_index);
+    reg_index = var_reg_map_getitem(code->vars, var_name);
+
     printf("code_get_var_reg: var %s -> r[%zu]\n", var_name, reg_index);
 
     return reg_index;
@@ -932,7 +924,6 @@ size_t code_lt(struct code_t * code, size_t a, size_t b) {
     var_reg_map_setitem(code->vars, var_name, reg_index);
     code_append_inst(code, OP_LT, (operands_t){.uuu = {reg_index, a, b}});
 
-    // printf("code_lt: var_name = %s\n", var_name);
     printf("code_add: r[%zu] = (r[%zu] < r[%zu])\n", reg_index, a, b);
 
     return reg_index;
@@ -944,8 +935,7 @@ size_t code_eq(struct code_t * code, size_t a, size_t b) {
     sprintf(var_name, "#%04zu", reg_index);
     var_reg_map_setitem(code->vars, var_name, reg_index);
     code_append_inst(code, OP_EQ, (operands_t){.uuu = {reg_index, a, b}});
-
-    // printf("code_eq: var_name = %s\n", var_name);
+    
     printf("code_eq: r[%zu] = (r[%zu] == r[%zu])\n", reg_index, a, b);
 
     return reg_index;
