@@ -862,6 +862,7 @@ size_t code_assign_const(struct code_t * code, char * var_name, struct object_t 
             exit(1);
     }
 
+    printf("%*s", (int)(code->fw_jumps->len), "");
     printf("code_assign_const: var %s = r[%zu]\n", var_name, reg_index);
 
     return reg_index;
@@ -885,6 +886,7 @@ size_t code_assign_var(struct code_t * code, char * dest_var_name, char * src_va
     var_reg_map_setitem(code->vars, dest_var_name, dest_reg_index);
     inst_index = code_append_inst(code, OP_MOV, (operands_t){.uu = {dest_reg_index, src_reg_index}});
 
+    printf("%*s", (int)(code->fw_jumps->len), "");
     printf("code_assign_var: r[%zu] = r[%zu] ; var %s = var %s\n", dest_reg_index, src_reg_index, dest_var_name, src_var_name);
     return dest_reg_index;
 }
@@ -893,6 +895,7 @@ size_t code_assign(struct code_t * code, size_t dest_reg_index, size_t src_reg_i
     size_t inst_index;
     inst_index = code_append_inst(code, OP_MOV, (operands_t){.uu = {dest_reg_index, src_reg_index}});
 
+    printf("%*s", (int)(code->fw_jumps->len), "");
     printf("code_assign: r[%zu] = r[%zu]\n", dest_reg_index, src_reg_index);
 
     return dest_reg_index;
@@ -912,6 +915,7 @@ size_t code_get_var_reg(struct code_t * code, char * var_name) {
 
     reg_index = var_reg_map_getitem(code->vars, var_name);
 
+    printf("%*s", (int)(code->fw_jumps->len), "");
     printf("code_get_var_reg: var %s -> r[%zu]\n", var_name, reg_index);
 
     return reg_index;
@@ -924,7 +928,8 @@ size_t code_lt(struct code_t * code, size_t a, size_t b) {
     var_reg_map_setitem(code->vars, var_name, reg_index);
     code_append_inst(code, OP_LT, (operands_t){.uuu = {reg_index, a, b}});
 
-    printf("code_add: r[%zu] = (r[%zu] < r[%zu])\n", reg_index, a, b);
+    printf("%*s", (int)(code->fw_jumps->len), "");
+    printf("code_lt: r[%zu] = (r[%zu] < r[%zu])\n", reg_index, a, b);
 
     return reg_index;
 }
@@ -936,6 +941,7 @@ size_t code_eq(struct code_t * code, size_t a, size_t b) {
     var_reg_map_setitem(code->vars, var_name, reg_index);
     code_append_inst(code, OP_EQ, (operands_t){.uuu = {reg_index, a, b}});
 
+    printf("%*s", (int)(code->fw_jumps->len), "");
     printf("code_eq: r[%zu] = (r[%zu] == r[%zu])\n", reg_index, a, b);
 
     return reg_index;
@@ -948,6 +954,7 @@ size_t code_add(struct code_t * code, size_t a, size_t b) {
     var_reg_map_setitem(code->vars, var_name, reg_index);
     code_append_inst(code, OP_ADD, (operands_t){.uuu = {reg_index, a, b}});
 
+    printf("%*s", (int)(code->fw_jumps->len), "");
     printf("code_add: r[%zu] = r[%zu] + r[%zu]\n", reg_index, a, b);
 
     return reg_index;
@@ -960,6 +967,7 @@ size_t code_mod(struct code_t * code, size_t a, size_t b) {
     var_reg_map_setitem(code->vars, var_name, reg_index);
     code_append_inst(code, OP_MOD, (operands_t){.uuu = {reg_index, a, b}});
 
+    printf("%*s", (int)(code->fw_jumps->len), "");
     printf("code_mod: r[%zu] = r[%zu] %% r[%zu]\n", reg_index, a, b);
 
     return reg_index;
@@ -976,6 +984,10 @@ void code_while(struct code_t * code, size_t a) {
     
     // jump point
     fw_jump_t jump = {.inst_index = inst_index, .inst = inst, .type = FW_JUMP_WHILE};
+
+    printf("%*s", (int)(code->fw_jumps->len), "");
+    printf("code_while: r[%zu]\n", a);
+
     fw_jump_array_append(code->fw_jumps, jump);
 }
 
@@ -990,6 +1002,10 @@ void code_if(struct code_t * code, size_t a) {
     
     // jump point
     fw_jump_t jump = {.inst_index = inst_index, .inst = inst, .type = FW_JUMP_IF};
+
+    printf("%*s", (int)(code->fw_jumps->len), "");
+    printf("code_if: r[%zu]\n", a);
+
     fw_jump_array_append(code->fw_jumps, jump);
 }
 
@@ -1000,6 +1016,10 @@ void code_else(struct code_t * code) {
 
     // jump point
     fw_jump_t jump = {.inst_index = inst_index, .inst = inst, .type = FW_JUMP_ELSE};
+
+    printf("%*s", (int)(code->fw_jumps->len), "");
+    printf("code_else:\n");
+
     fw_jump_array_append(code->fw_jumps, jump);
 }
 
@@ -1010,6 +1030,10 @@ void code_break(struct code_t * code) {
     
     // jump point
     fw_jump_t jump = {.inst_index = inst_index, .inst = inst, .type = FW_JUMP_BREAK};
+
+    printf("%*s", (int)(code->fw_jumps->len), "");
+    printf("code_break:\n");
+
     fw_jump_array_append(code->fw_jumps, jump);
 }
 
@@ -1023,46 +1047,88 @@ void code_end(struct code_t * code) {
     size_t nop_inst_index;
     struct inst_t * nop_inst;
 
-    for (i = code->fw_jumps->len - 1; i >= 0; i--) {
-        jump = &code->fw_jumps->items[i];
+    // for (i = code->fw_jumps->len - 1; i >= 0; i--) {
+    //     jump = &code->fw_jumps->items[i];
 
-        switch (jump->type) {
-            case FW_JUMP_IF:
-                printf("FW_JUMP_IF\n");
-                break;
-            case FW_JUMP_ELIF:
-                printf("FW_JUMP_ELIF\n");
-                break;
-            case FW_JUMP_ELSE:
-                printf("FW_JUMP_ELSE\n");
-                break;
-            case FW_JUMP_WHILE:
-                printf("FW_JUMP_WHILE\n");
+    //     switch (jump->type) {
+    //         case FW_JUMP_IF:
+    //             printf("FW_JUMP_IF\n");
+    //             break;
+    //         case FW_JUMP_ELIF:
+    //             printf("FW_JUMP_ELIF\n");
+    //             break;
+    //         case FW_JUMP_ELSE:
+    //             printf("FW_JUMP_ELSE\n");
+    //             break;
+    //         case FW_JUMP_WHILE:
+    //             printf("FW_JUMP_WHILE\n");
                 
-                // JMP op
-                jmp_inst_index = code_append_inst(code, OP_JMP, (operands_t){.i = {0}});
-                jmp_inst = &code->insts->items[jmp_inst_index];
+    //             // JMP op
+    //             jmp_inst_index = code_append_inst(code, OP_JMP, (operands_t){.i = {0}});
+    //             jmp_inst = &code->insts->items[jmp_inst_index];
 
-                // NOP op
-                nop_inst_index = code_append_inst(code, OP_NOP, (operands_t){});
-                nop_inst = &code->insts->items[nop_inst_index];
+    //             // NOP op
+    //             nop_inst_index = code_append_inst(code, OP_NOP, (operands_t){});
+    //             nop_inst = &code->insts->items[nop_inst_index];
 
-                // update jump points
-                jmp_inst->operands.i.a = jump->inst_index - jmp_inst_index - 1;
-                jump->inst->operands.ui.b = -(jump->inst_index - jmp_inst_index - 1);
+    //             // update jump points
+    //             jmp_inst->operands.i.a = jump->inst_index - jmp_inst_index - 1;
+    //             jump->inst->operands.ui.b = -(jump->inst_index - jmp_inst_index - 1);
 
-                // pop last jump
-                fw_jump_array_pop(code->fw_jumps);
+    //             // pop last jump
+    //             fw_jump_array_pop(code->fw_jumps);
 
-                break;
-            case FW_JUMP_BREAK:
-                printf("FW_JUMP_BREAK\n");
-                break;
-            case FW_JUMP_CONTINUE:
-                printf("FW_JUMP_CONTINUE\n");
-                break;
-        }
+    //             break;
+    //         case FW_JUMP_BREAK:
+    //             printf("FW_JUMP_BREAK\n");
+    //             break;
+    //         case FW_JUMP_CONTINUE:
+    //             printf("FW_JUMP_CONTINUE\n");
+    //             break;
+    //     }
+    // }
+
+    jump = &code->fw_jumps->items[code->fw_jumps->len - 1];
+
+    switch (jump->type) {
+        case FW_JUMP_IF:
+            printf("FW_JUMP_IF\n");
+            break;
+        case FW_JUMP_ELIF:
+            printf("FW_JUMP_ELIF\n");
+            break;
+        case FW_JUMP_ELSE:
+            printf("FW_JUMP_ELSE\n");
+            break;
+        case FW_JUMP_WHILE:
+            printf("FW_JUMP_WHILE\n");
+            
+            // JMP op
+            jmp_inst_index = code_append_inst(code, OP_JMP, (operands_t){.i = {0}});
+            jmp_inst = &code->insts->items[jmp_inst_index];
+
+            // NOP op
+            nop_inst_index = code_append_inst(code, OP_NOP, (operands_t){});
+            nop_inst = &code->insts->items[nop_inst_index];
+
+            // update jump points
+            jmp_inst->operands.i.a = jump->inst_index - jmp_inst_index - 1;
+            jump->inst->operands.ui.b = -(jump->inst_index - jmp_inst_index - 1);
+
+            // pop last jump
+            fw_jump_array_pop(code->fw_jumps);
+
+            break;
+        case FW_JUMP_BREAK:
+            printf("FW_JUMP_BREAK\n");
+            break;
+        case FW_JUMP_CONTINUE:
+            printf("FW_JUMP_CONTINUE\n");
+            break;
     }
+
+    printf("%*s", (int)(code->fw_jumps->len), "");
+    printf("code_end:\n");
 }
 
 int main(int argc, char ** argv) {
