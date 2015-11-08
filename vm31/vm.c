@@ -935,7 +935,7 @@ size_t code_eq(struct code_t * code, size_t a, size_t b) {
     sprintf(var_name, "#%04zu", reg_index);
     var_reg_map_setitem(code->vars, var_name, reg_index);
     code_append_inst(code, OP_EQ, (operands_t){.uuu = {reg_index, a, b}});
-    
+
     printf("code_eq: r[%zu] = (r[%zu] == r[%zu])\n", reg_index, a, b);
 
     return reg_index;
@@ -1050,6 +1050,9 @@ void code_end(struct code_t * code) {
                 // update jump points
                 jmp_inst->operands.i.a = jump->inst_index - jmp_inst_index - 1;
                 jump->inst->operands.ui.b = -(jump->inst_index - jmp_inst_index - 1);
+
+                // pop last jump
+                fw_jump_array_pop(code->fw_jumps);
 
                 break;
             case FW_JUMP_BREAK:
