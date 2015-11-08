@@ -791,7 +791,8 @@ object_t * frame_exec(struct frame_t * frame) {
 }
 
 size_t code_assign_const(struct code_t * code, char * var_name, struct object_t obj);
-size_t code_assign(struct code_t * code, char * dest_var_name, char * src_var_name);
+size_t code_assign_var(struct code_t * code, char * dest_var_name, char * src_var_name);
+size_t code_assign(struct code_t * code, size_t dest_reg_index, size_t src_reg_index);
 
 size_t code_assign_const(struct code_t * code, char * var_name, struct object_t obj) {
     bool has_var;
@@ -799,7 +800,7 @@ size_t code_assign_const(struct code_t * code, char * var_name, struct object_t 
     size_t inst_index;
 
     has_var = var_reg_map_hasitem(code->vars, var_name);
-    printf("code_assign_const: var_name = %s, has_var = %d; ", var_name, has_var);
+    // printf("code_assign_const: var_name = %s, has_var = %d; ", var_name, has_var);
 
     if (has_var) {
         reg_index = var_reg_map_getitem(code->vars, var_name);
@@ -808,7 +809,7 @@ size_t code_assign_const(struct code_t * code, char * var_name, struct object_t 
         var_reg_map_setitem(code->vars, var_name, reg_index);
     }
 
-    printf("reg_index = %zu\n", reg_index);
+    // printf("reg_index = %zu\n", reg_index);
 
     switch (obj.t) {
         // int
@@ -860,24 +861,26 @@ size_t code_assign_const(struct code_t * code, char * var_name, struct object_t 
             break;
 
         default:
-            printf("Unsupported object type: %u\n", obj.t);
+            printf("code_assign_const: Unsupported object type: %u\n", obj.t);
             exit(1);
     }
+
+    printf("code_assign_const: var %s = r[%zu]\n", var_name, reg_index);
 
     return reg_index;
 }
 
-size_t code_assign(struct code_t * code, char * dest_var_name, char * src_var_name) {
+size_t code_assign_var(struct code_t * code, char * dest_var_name, char * src_var_name) {
     bool has_var;
     size_t dest_reg_index;
     size_t src_reg_index;
     size_t inst_index;
 
     has_var = var_reg_map_hasitem(code->vars, src_var_name);
-    printf("code_assign: dest_var_name = %s, src_var_name = %s, has_var = %d; ", dest_var_name, src_var_name, has_var);
+    // printf("code_assign: dest_var_name = %s, src_var_name = %s, has_var = %d; ", dest_var_name, src_var_name, has_var);
 
     if (!has_var) {
-        printf("Variable \"%s\" could not be found\n", src_var_name);
+        printf("code_assign_var: Variable \"%s\" could not be found\n", src_var_name);
         exit(1);
     }
 
@@ -886,7 +889,18 @@ size_t code_assign(struct code_t * code, char * dest_var_name, char * src_var_na
     var_reg_map_setitem(code->vars, dest_var_name, dest_reg_index);
     inst_index = code_append_inst(code, OP_MOV, (operands_t){.uu = {dest_reg_index, src_reg_index}});
 
-    printf("dest_reg_index = %zu, src_reg_index = %zu\n", dest_reg_index, src_reg_index);
+    // printf("dest_reg_index = %zu, src_reg_index = %zu\n", dest_reg_index, src_reg_index);
+    printf("code_assign_var: r[%zu] = r[%zu] ; var %s = var %s\n", dest_reg_index, src_reg_index, dest_var_name, src_var_name);
+    return dest_reg_index;
+}
+
+size_t code_assign(struct code_t * code, size_t dest_reg_index, size_t src_reg_index) {
+    size_t inst_index;
+    // printf("code_assign: dest_reg_index = %zu, src_reg_index = %zu\n", dest_reg_index, src_reg_index);
+    inst_index = code_append_inst(code, OP_MOV, (operands_t){.uu = {dest_reg_index, src_reg_index}});
+
+    printf("code_assign: r[%zu] = r[%zu]\n", dest_reg_index, src_reg_index);
+
     return dest_reg_index;
 }
 
@@ -896,16 +910,18 @@ size_t code_get_var_reg(struct code_t * code, char * var_name) {
     size_t inst_index;
 
     has_var = var_reg_map_hasitem(code->vars, var_name);
-    printf("code_get_var_reg: var_name = %s, has_var = %d; ", var_name, has_var);
+    // printf("code_get_var_reg: var_name = %s, has_var = %d; ", var_name, has_var);
 
     if (has_var) {
         reg_index = var_reg_map_getitem(code->vars, var_name);
     } else {
-        printf("Variable \"%s\" could not be found\n", var_name);
+        printf("code_get_var_reg: Variable \"%s\" could not be found\n", var_name);
         exit(1);
     }
 
-    printf("reg_index = %zu\n", reg_index);
+    // printf("reg_index = %zu\n", reg_index);
+    printf("code_get_var_reg: var %s -> r[%zu]\n", var_name, reg_index);
+
     return reg_index;
 }
 
@@ -915,6 +931,10 @@ size_t code_lt(struct code_t * code, size_t a, size_t b) {
     sprintf(var_name, "#%04zu", reg_index);
     var_reg_map_setitem(code->vars, var_name, reg_index);
     code_append_inst(code, OP_LT, (operands_t){.uuu = {reg_index, a, b}});
+
+    // printf("code_lt: var_name = %s\n", var_name);
+    printf("code_add: r[%zu] = (r[%zu] < r[%zu])\n", reg_index, a, b);
+
     return reg_index;
 }
 
@@ -924,6 +944,34 @@ size_t code_eq(struct code_t * code, size_t a, size_t b) {
     sprintf(var_name, "#%04zu", reg_index);
     var_reg_map_setitem(code->vars, var_name, reg_index);
     code_append_inst(code, OP_EQ, (operands_t){.uuu = {reg_index, a, b}});
+
+    // printf("code_eq: var_name = %s\n", var_name);
+    printf("code_eq: r[%zu] = (r[%zu] == r[%zu])\n", reg_index, a, b);
+
+    return reg_index;
+}
+
+size_t code_add(struct code_t * code, size_t a, size_t b) {
+    char * var_name = (char*)malloc(5 * sizeof(char));
+    size_t reg_index = code->vars->len;
+    sprintf(var_name, "#%04zu", reg_index);
+    var_reg_map_setitem(code->vars, var_name, reg_index);
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {reg_index, a, b}});
+
+    printf("code_add: r[%zu] = r[%zu] + r[%zu]\n", reg_index, a, b);
+
+    return reg_index;
+}
+
+size_t code_mod(struct code_t * code, size_t a, size_t b) {
+    char * var_name = (char*)malloc(5 * sizeof(char));
+    size_t reg_index = code->vars->len;
+    sprintf(var_name, "#%04zu", reg_index);
+    var_reg_map_setitem(code->vars, var_name, reg_index);
+    code_append_inst(code, OP_MOD, (operands_t){.uuu = {reg_index, a, b}});
+
+    printf("code_mod: r[%zu] = r[%zu] %% r[%zu]\n", reg_index, a, b);
+
     return reg_index;
 }
 
@@ -979,9 +1027,11 @@ void code_end(struct code_t * code) {
     int i;
     fw_jump_t * jump;
 
-    // NOP op
-    size_t inst_index = code_append_inst(code, OP_NOP, (operands_t){});
-    struct inst_t * inst = &code->insts->items[inst_index];
+    size_t jmp_inst_index;
+    struct inst_t * jmp_inst;
+
+    size_t nop_inst_index;
+    struct inst_t * nop_inst;
 
     for (i = code->fw_jumps->len - 1; i >= 0; i--) {
         jump = &code->fw_jumps->items[i];
@@ -998,7 +1048,19 @@ void code_end(struct code_t * code) {
                 break;
             case FW_JUMP_WHILE:
                 printf("FW_JUMP_WHILE\n");
-                jump->inst->operands.ui.b = jump->inst_index - inst_index - 1;
+                
+                // JMP op
+                jmp_inst_index = code_append_inst(code, OP_JMP, (operands_t){.i = {0}});
+                jmp_inst = &code->insts->items[jmp_inst_index];
+
+                // NOP op
+                nop_inst_index = code_append_inst(code, OP_NOP, (operands_t){});
+                nop_inst = &code->insts->items[nop_inst_index];
+
+                // update jump points
+                jmp_inst->operands.i.a = jump->inst_index - jmp_inst_index - 1;
+                jump->inst->operands.ui.b = -(jump->inst_index - jmp_inst_index - 1);
+
                 break;
             case FW_JUMP_BREAK:
                 printf("FW_JUMP_BREAK\n");
@@ -1008,24 +1070,6 @@ void code_end(struct code_t * code) {
                 break;
         }
     }
-}
-
-size_t code_add(struct code_t * code, size_t a, size_t b) {
-    char * var_name = (char*)malloc(5 * sizeof(char));
-    size_t reg_index = code->vars->len;
-    sprintf(var_name, "#%04zu", reg_index);
-    var_reg_map_setitem(code->vars, var_name, reg_index);
-    code_append_inst(code, OP_ADD, (operands_t){.uuu = {reg_index, a, b}});
-    return reg_index;
-}
-
-size_t code_mod(struct code_t * code, size_t a, size_t b) {
-    char * var_name = (char*)malloc(5 * sizeof(char));
-    size_t reg_index = code->vars->len;
-    sprintf(var_name, "#%04zu", reg_index);
-    var_reg_map_setitem(code->vars, var_name, reg_index);
-    code_append_inst(code, OP_MOD, (operands_t){.uuu = {reg_index, a, b}});
-    return reg_index;
 }
 
 int main(int argc, char ** argv) {
@@ -1071,8 +1115,8 @@ int main(int argc, char ** argv) {
     code_assign_const(code, "d", (object_t){.t = TYPE_I64, .v = {.i64 = 7}});
     code_assign_const(code, "e", (object_t){.t = TYPE_I64, .v = {.i64 = 1}});
     code_assign_const(code, "f", (object_t){.t = TYPE_I64, .v = {.i64 = 0}});
-    code_assign(code, "i", "a");
-    
+    code_assign_var(code, "i", "a");
+
     code_while(code, code_lt(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "c")));
     //     code_if(code, code_eq(code, code_mod(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "d")), code_get_var_reg(code, "f")));
     //         code_while(code, code_lt(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "c")));
@@ -1082,7 +1126,7 @@ int main(int argc, char ** argv) {
     //             code_end(code);
     //         code_end(code);
     //     code_else(code);
-    //         code_assign(code, code_get_var_reg(code, "i"), code_add(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "b")));
+            code_assign(code, code_get_var_reg(code, "i"), code_add(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "b")));
     //     code_end(code);
     code_end(code);
     
