@@ -388,26 +388,39 @@ typedef struct thread_t {
 //
 // code
 //
-typedef enum fw_jump_type_t {
-    FW_JUMP_IF,
-    FW_JUMP_ELIF,
-    FW_JUMP_ELSE,
-    FW_JUMP_WHILE,
-    FW_JUMP_BREAK,
-    FW_JUMP_CONTINUE,
-    FW_JUMP_END,
-    FW_JUMP_END_IF,
-    FW_JUMP_END_WHILE,
-} fw_jump_type_t;
+enum hl_inst_type_t;
+struct hl_inst_t;
+enum jmp_inst_type_t;
+struct jmp_inst_t;
 
-typedef struct fw_jump_t {
+typedef enum hl_inst_type_t {
+    HL_INST_IF,
+    HL_INST_ELIF,
+    HL_INST_ELSE,
+    HL_INST_WHILE,
+    HL_INST_END
+} hl_inst_type_t;
+
+typedef struct hl_inst_t {
+    enum hl_inst_type_t type;
     size_t inst_index;
     struct inst_t * inst;
-    enum fw_jump_type_t type;
-    bool resolved;
-} fw_jump_t;
+} hl_inst_t;
 
-MAKE_ARRAY(fw_jump, fw_jump_t);
+MAKE_ARRAY(hl_jump, hl_jump_t);
+
+typedef enum jmp_inst_type_t {
+    HL_INST_BREAK,
+    HL_INST_CONTINUE
+} jmp_inst_type_t;
+
+typedef struct jmp_inst_t {
+    enum jmp_inst_type_t type;
+    size_t inst_index;
+    struct inst_t * inst;
+} jmp_inst_t;
+
+MAKE_ARRAY(jmp_jump, jmp_jump_t);
 
 typedef struct code_t {
     struct inst_array_t * insts;
@@ -924,7 +937,7 @@ size_t code_get_var_reg(struct code_t * code, char * var_name) {
 
     // printf("%*s", (int)(code->fw_jumps->len), "");
     // printf("code_get_var_reg: ");
-    printf("var %s -> r[%zu]\n", var_name, reg_index);
+    printf("var %s @ r[%zu]\n", var_name, reg_index);
 
     return reg_index;
 }
@@ -998,6 +1011,8 @@ void code_if(struct code_t * code, size_t a) {
     fw_jump_t jump = {
         .inst_index = jt_inst_index,
         .inst = jt_inst,
+        .prev_jump = NULL,
+        .next_jump = NULL,
         .type = FW_JUMP_IF,
         .resolved = false
     };
@@ -1022,6 +1037,8 @@ void code_else(struct code_t * code) {
     fw_jump_t jump = {
         .inst_index = jmp_inst_index,
         .inst = jmp_inst,
+        .prev_jump = NULL,
+        .next_jump = NULL,
         .type = FW_JUMP_ELSE,
         .resolved = false
     };
@@ -1045,6 +1062,8 @@ void code_while(struct code_t * code, size_t a) {
     fw_jump_t jump = {
         .inst_index = inst_index,
         .inst = inst,
+        .prev_jump = NULL,
+        .next_jump = NULL,
         .type = FW_JUMP_WHILE,
         .resolved = false
     };
@@ -1065,6 +1084,8 @@ void code_break(struct code_t * code) {
     fw_jump_t jump = {
         .inst_index = inst_index,
         .inst = inst,
+        .prev_jump = NULL,
+        .next_jump = NULL,
         .type = FW_JUMP_BREAK,
         .resolved = false
     };
@@ -1075,52 +1096,13 @@ void code_break(struct code_t * code) {
     fw_jump_array_append(code->fw_jumps, jump);
 }
 
-/*
-    jump = &code->fw_jumps->items[code->fw_jumps->len - 1];
-
-    switch (jump->type) {
-        case FW_JUMP_IF:
-            printf("FW_JUMP_IF\n");
-            break;
-        case FW_JUMP_ELIF:
-            printf("FW_JUMP_ELIF\n");
-            break;
-        case FW_JUMP_ELSE:
-            printf("FW_JUMP_ELSE\n");
-            break;
-        case FW_JUMP_WHILE:
-            printf("FW_JUMP_WHILE\n");
-            
-            // JMP op
-            jmp_inst_index = code_append_inst(code, OP_JMP, (operands_t){.i = {0}});
-            jmp_inst = &code->insts->items[jmp_inst_index];
-
-            // NOP op
-            nop_inst_index = code_append_inst(code, OP_NOP, (operands_t){});
-            nop_inst = &code->insts->items[nop_inst_index];
-
-            // update jump points
-            jmp_inst->operands.i.a = jump->inst_index - jmp_inst_index - 1;
-            jump->inst->operands.ui.b = -(jump->inst_index - jmp_inst_index - 1);
-
-            // pop last jump
-            fw_jump_array_pop(code->fw_jumps);
-
-            break;
-        case FW_JUMP_BREAK:
-            printf("FW_JUMP_BREAK\n");
-            break;
-        case FW_JUMP_CONTINUE:
-            printf("FW_JUMP_CONTINUE\n");
-            break;
-    }
-*/
-
 void code_end(struct code_t * code) {
     int i;
     fw_jump_t * jump;
+    fw_jump_t * prev_jump;
+    fw_jump_t * end_jump;
 
-    // used for closing while loop
+    // used for closing WHILE loop
     size_t jmp_inst_index;
     struct inst_t * jmp_inst;
 
@@ -1128,26 +1110,55 @@ void code_end(struct code_t * code) {
     size_t nop_inst_index;
     struct inst_t * nop_inst;
 
-    //
-    // find if END's jump type
-    //
-    bool v0 = false;
-    fw_jump_type_t end_jump_type = FW_JUMP_END;
+    // incompletely initialized jump
+    fw_jump_t _end_jump = {
+        .resolved = false
+    };
 
+    end_jump = &_end_jump;
+    fw_jump_array_append(code->fw_jumps, _end_jump);
+
+    bool v0 = false;
+    
     for (i = code->fw_jumps->len - 1; i >= 0; i--) {
         jump = &code->fw_jumps->items[i];
+
+        // skip resolved jumps
+        if (jump->resolved) {
+            continue;
+        }
         
         switch (jump->type) {
             case FW_JUMP_IF:
+                end_jump->type = FW_JUMP_END_IF;
+                v0 = true;
+                break;
+
             case FW_JUMP_ELIF:
-            case FW_JUMP_ELSE:
-                end_jump_type = FW_JUMP_END_IF;
-                v0 = true;
                 break;
+
             case FW_JUMP_WHILE:
-                end_jump_type = FW_JUMP_END_WHILE;
+                // current jump
+                jump->prev_jump = NULL;
+                jump->next_jump = end_jump;
+
+                // it has to be end_jump
+                prev_jump->prev_jump = jump;
+                prev_jump->next_jump = NULL;
+
+                // end jump
+                end_jump->type = FW_JUMP_END_WHILE;
+
                 v0 = true;
                 break;
+
+            case FW_JUMP_ELSE:
+                break;
+
+            case FW_JUMP_END:
+                prev_jump = end_jump;
+                break;
+
             default:
                 break;
         }
@@ -1156,57 +1167,7 @@ void code_end(struct code_t * code) {
             break;
         }
     }
-
-    //
-    // create required instructions for END based on its jump type
-    //
-    fw_jump_t end_jump;
-
-    switch (end_jump_type) {
-        case FW_JUMP_END_IF:
-            // NOP op
-            nop_inst_index = code_append_inst(code, OP_NOP, (operands_t){});
-            nop_inst = &code->insts->items[nop_inst_index];
-
-            // jump point
-            end_jump = (fw_jump_t){
-                .inst_index = nop_inst_index,
-                .inst = nop_inst,
-                .type = end_jump_type,
-                .resolved = false
-            };
-
-            break;
-        case FW_JUMP_END_WHILE:
-            // JMP op
-            jmp_inst_index = code_append_inst(code, OP_JMP, (operands_t){.i = {0}});
-            jmp_inst = &code->insts->items[jmp_inst_index];
-
-            // NOP op
-            nop_inst_index = code_append_inst(code, OP_NOP, (operands_t){});
-            nop_inst = &code->insts->items[nop_inst_index];
-
-            // jump point
-            end_jump = (fw_jump_t){
-                .inst_index = jmp_inst_index,
-                .inst = jmp_inst,
-                .type = end_jump_type,
-                .resolved = false
-            };
-
-            break;
-        default:
-            printf("code_end: Unsupported block ending!\n");
-            exit(1);
-            break;
-    }
-
-    fw_jump_array_append(code->fw_jumps, end_jump);
-
-    //
-    // patch jump points
-    //
-
+    
     // printf("%*s", (int)(code->fw_jumps->len), "");
     printf("code_end:\n");
 }
@@ -1255,7 +1216,7 @@ int main(int argc, char ** argv) {
     code_assign_const(code, "e", (object_t){.t = TYPE_I64, .v = {.i64 = 1}});
     code_assign_const(code, "f", (object_t){.t = TYPE_I64, .v = {.i64 = 0}});
     code_assign_var(code, "i", "a");
-
+    
     code_while(code, code_lt(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "c")));
         code_if(code, code_eq(code, code_mod(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "d")), code_get_var_reg(code, "f")));
             code_while(code, code_lt(code, code_get_var_reg(code, "i"), code_get_var_reg(code, "c")));
