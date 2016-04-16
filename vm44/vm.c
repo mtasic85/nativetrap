@@ -387,10 +387,10 @@ object_t * frame_exec(struct frame_t * frame) {
         DISPATCH;
 
     L_OP_ADD:
-        switch (regs->items[inst->operands.uuu.b].t) {
-            case TYPE_I:
-                switch (regs->items[inst->operands.uuu.c].t) {
-                    case TYPE_I:
+        // switch (regs->items[inst->operands.uuu.b].t) {
+        //     case TYPE_I:
+        //         switch (regs->items[inst->operands.uuu.c].t) {
+        //             case TYPE_I:
                         regs->items[inst->operands.uuu.a] = (object_t){
                             .t = TYPE_I,
                             .v = (value_t){.i = (
@@ -398,21 +398,21 @@ object_t * frame_exec(struct frame_t * frame) {
                                 regs->items[inst->operands.uuu.c].v.i
                             )}
                         };
-                        break;
-                    default:
-                        ;
-                }
-                break;
-            default:
-                ;
-        }
+        //                 break;
+        //             default:
+        //                 ;
+        //         }
+        //         break;
+        //     default:
+        //         ;
+        // }
         DISPATCH;
 
     L_OP_LT:
-        switch (regs->items[inst->operands.uuu.b].t) {
-            case TYPE_I:
-                switch (regs->items[inst->operands.uuu.c].t) {
-                    case TYPE_I:
+        // switch (regs->items[inst->operands.uuu.b].t) {
+        //     case TYPE_I:
+        //         switch (regs->items[inst->operands.uuu.c].t) {
+        //             case TYPE_I:
                         regs->items[inst->operands.uuu.a] = (object_t){
                             .t = TYPE_I,
                             .v = (value_t){.i = (
@@ -420,34 +420,35 @@ object_t * frame_exec(struct frame_t * frame) {
                                 regs->items[inst->operands.uuu.c].v.i
                             )}
                         };
-                        break;
-                    default:
-                        ;
-                }
-                break;
-            default:
-                ;
-        }
+        //                 break;
+        //             default:
+        //                 ;
+        //         }
+        //         break;
+        //     default:
+        //         ;
+        // }
         DISPATCH;
 
     L_OP_JEQ:
-        switch (regs->items[inst->operands.uui.a].t) {
-            case TYPE_I:
-                switch (regs->items[inst->operands.uui.b].t) {
-                    case TYPE_I:
-                        if (regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i) {
+        // switch (regs->items[inst->operands.uui.a].t) {
+        //     case TYPE_I:
+        //         switch (regs->items[inst->operands.uui.b].t) {
+        //             case TYPE_I:
+                        // if (regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i) {
+                        if (__builtin_expect(regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i, 0)) {
                             DISPATCH;
                         } else {
                             DISPATCH_JUMP(inst->operands.uui.c);
                         }
-                        break;
-                    default:
-                        ;
-                }
-                break;
-            default:
-                ;
-        }
+        //                 break;
+        //             default:
+        //                 ;
+        //         }
+        //         break;
+        //     default:
+        //         ;
+        // }
 
     L_OP_JMP:
         DISPATCH_JUMP(inst->operands.i.a);
