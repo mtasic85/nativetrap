@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include <sys/mman.h>
+// #include <sys/mman.h>
 
 #define INLINE static __inline__
 
@@ -88,12 +88,12 @@ typedef enum opcode_name_t {
     OP_I_CONST,
     OP_U_CONST,
     OP_NOP,
-    OP_END,
     OP_MOV,
     OP_ADD,
     OP_LT,
+    OP_JEQ,
     OP_JMP,
-    OP_JEQ
+    OP_END
 } opcode_name_t;
 
 typedef union opcode_t {
@@ -336,18 +336,18 @@ object_t * frame_exec(struct frame_t * frame) {
     object_array_t * regs = frame->regs;
 
     void * opcode_addresses[] = {
-        &&_OP_I_CONST,
-        &&_OP_U_CONST,
-        &&_OP_NOP,
-        &&_OP_MOV,
-        &&_OP_ADD,
-        &&_OP_LT,
-        &&_OP_JEQ,
-        &&_OP_JMP,
-        &&_OP_END
+        &&L_OP_I_CONST,
+        &&L_OP_U_CONST,
+        &&L_OP_NOP,
+        &&L_OP_MOV,
+        &&L_OP_ADD,
+        &&L_OP_LT,
+        &&L_OP_JEQ,
+        &&L_OP_JMP,
+        &&L_OP_END
     };
 
-    int i;
+    size_t i;
     inst_t * inst;
 
     for (i = 0; i < insts->len; i++) {
@@ -358,15 +358,14 @@ object_t * frame_exec(struct frame_t * frame) {
     #define DISPATCH inst++; goto *inst->opcode.addr
     #define DISPATCH_JUMP(dist) inst += dist; goto *inst->opcode.addr
 
-
     // void * mem_op_add = &&_OP_LT - &&_OP_ADD;
     // char * nativecode_op_add = mmap(0, m, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, -1, 0)
     
     // goto first inst
-    inst = insts->items;
+    inst = &insts->items[0];
     goto *inst->opcode.addr;
 
-    _OP_I_CONST:
+    L_OP_I_CONST:
         regs->items[inst->operands.ui.a] = (object_t){
             .t = TYPE_I,
             .v = (value_t){
@@ -375,7 +374,7 @@ object_t * frame_exec(struct frame_t * frame) {
         };
         DISPATCH;
 
-    _OP_U_CONST:
+    L_OP_U_CONST:
         regs->items[inst->operands.uu.a] = (object_t){
             .t = TYPE_U,
             .v = (value_t){
@@ -384,14 +383,14 @@ object_t * frame_exec(struct frame_t * frame) {
         };
         DISPATCH;
 
-    _OP_NOP:
+    L_OP_NOP:
         DISPATCH;
 
-    _OP_MOV:
+    L_OP_MOV:
         regs->items[inst->operands.uu.a] = regs->items[inst->operands.uu.b];
         DISPATCH;
 
-    _OP_ADD:
+    L_OP_ADD:
         switch (regs->items[inst->operands.uuu.b].t) {
             case TYPE_I:
                 switch (regs->items[inst->operands.uuu.c].t) {
@@ -413,7 +412,7 @@ object_t * frame_exec(struct frame_t * frame) {
         }
         DISPATCH;
 
-    _OP_LT:
+    L_OP_LT:
         switch (regs->items[inst->operands.uuu.b].t) {
             case TYPE_I:
                 switch (regs->items[inst->operands.uuu.c].t) {
@@ -435,15 +434,14 @@ object_t * frame_exec(struct frame_t * frame) {
         }
         DISPATCH;
 
-    _OP_JEQ:
-        switch(regs->items[inst->operands.uui.a].t) {
+    L_OP_JEQ:
+        switch (regs->items[inst->operands.uui.a].t) {
             case TYPE_I:
-                switch(regs->items[inst->operands.uui.b].t) {
+                switch (regs->items[inst->operands.uui.b].t) {
                     case TYPE_I:
                         if (regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i) {
                             DISPATCH;
                         } else {
-                            // pc += inst->operands.uui.c;
                             DISPATCH_JUMP(inst->operands.uui.c);
                         }
                         break;
@@ -455,10 +453,10 @@ object_t * frame_exec(struct frame_t * frame) {
                 ;
         }
 
-    _OP_JMP:
+    L_OP_JMP:
         DISPATCH_JUMP(inst->operands.i.a);
 
-    _OP_END:
+    L_OP_END:
         ;
 
     return NULL;
@@ -480,7 +478,6 @@ void test1() {
     code_append_inst(code, OP_I_CONST, (operands_t){.ui = {0, 0}});
     code_append_inst(code, OP_I_CONST, (operands_t){.ui = {1, 200000000}});
     code_append_inst(code, OP_I_CONST, (operands_t){.ui = {2, 1}});
-
     code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
     code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3}});
     code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});

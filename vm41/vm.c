@@ -1,3 +1,5 @@
+// DOES NOT WORK
+
 // gcc -Og -c vm.c && gcc -o vm vm.o && ls -l vm && time ./vm
 // gcc -O3 -c vm.c && gcc -o vm vm.o && ls -l vm && time ./vm
 // clang -O3 -c vm.c && clang -o vm vm.o && ls -l vm && time ./vm
