@@ -27,7 +27,7 @@
     \
     INLINE prefix ## _array_t * prefix ## _array_new(void) { \
         prefix ## _array_t * s = (prefix ## _array_t *) malloc(sizeof(prefix ## _array_t)); \
-        s->cap = 32u; \
+        s->cap = 128u; \
         s->len = 0u; \
         s->items = (type *) malloc(s->cap * sizeof(type)); \
         return s; \
@@ -88,8 +88,10 @@ typedef enum opcode_name_t {
     OP_U_CONST,
     OP_NOP,
     OP_MOV,
+    OP_INC,
     OP_ADD,
     OP_LT,
+    OP_JLT,
     OP_JEQ,
     OP_JMP,
     OP_END
@@ -99,6 +101,10 @@ typedef union opcode_t {
     enum opcode_name_t name;
     void * addr;
 } opcode_t;
+
+typedef struct operands_u_t {
+    unsigned int a;
+} operands_u_t;
 
 typedef struct operands_ui_t {
     unsigned int a;
@@ -187,6 +193,7 @@ typedef struct operands_uuu_t {
 } operands_uuu_t;
 
 typedef union operands_t {
+    struct operands_u_t u;
     struct operands_ui_t ui;
     struct operands_ui8_t ui8;
     struct operands_ui16_t ui16;
@@ -339,8 +346,10 @@ object_t * frame_exec(struct frame_t * frame) {
         &&L_OP_U_CONST,
         &&L_OP_NOP,
         &&L_OP_MOV,
+        &&L_OP_INC,
         &&L_OP_ADD,
         &&L_OP_LT,
+        &&L_OP_JLT,
         &&L_OP_JEQ,
         &&L_OP_JMP,
         &&L_OP_END
@@ -384,6 +393,16 @@ object_t * frame_exec(struct frame_t * frame) {
 
     L_OP_MOV:
         regs->items[inst->operands.uu.a] = regs->items[inst->operands.uu.b];
+        DISPATCH;
+
+    L_OP_INC:
+        // switch (regs->items[inst->operands.u.a].t) {
+        //     case TYPE_I:
+                regs->items[inst->operands.u.a].v.i++;
+        //         break;
+        //     default:
+        //         ;
+        // }
         DISPATCH;
 
     L_OP_ADD:
@@ -430,13 +449,31 @@ object_t * frame_exec(struct frame_t * frame) {
         // }
         DISPATCH;
 
+    L_OP_JLT:
+        // switch (regs->items[inst->operands.uui.a].t) {
+        //     case TYPE_I:
+        //         switch (regs->items[inst->operands.uui.b].t) {
+        //             case TYPE_I:
+                        if (regs->items[inst->operands.uui.a].v.i < regs->items[inst->operands.uui.b].v.i) {
+                            DISPATCH;
+                        } else {
+                            DISPATCH_JUMP(inst->operands.uui.c);
+                        }
+        //                 break;
+        //             default:
+        //                 ;
+        //         }
+        //         break;
+        //     default:
+        //         ;
+        // }
+
     L_OP_JEQ:
         // switch (regs->items[inst->operands.uui.a].t) {
         //     case TYPE_I:
         //         switch (regs->items[inst->operands.uui.b].t) {
         //             case TYPE_I:
-                        // if (regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i) {
-                        if (__builtin_expect(regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i, 0)) {
+                        if (regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i) {
                             DISPATCH;
                         } else {
                             DISPATCH_JUMP(inst->operands.uui.c);
@@ -475,10 +512,25 @@ void test1() {
     code_append_inst(code, OP_I_CONST, (operands_t){.ui = {0, 0}});
     code_append_inst(code, OP_I_CONST, (operands_t){.ui = {1, 200000000}});
     code_append_inst(code, OP_I_CONST, (operands_t){.ui = {2, 1}});
-    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
-    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3}});
-    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
-    code_append_inst(code, OP_JMP, (operands_t){.i = {-3}});
+    
+    /*
+    code_append_inst(code, OP_JLT, (operands_t){.uui = {0, 1, 3}});
+    code_append_inst(code, OP_INC, (operands_t){.u = {0}});
+    code_append_inst(code, OP_JMP, (operands_t){.i = {-2}});
+    */
+
+    // {
+    int j;
+    int j_max = 16;
+
+    for (j = 1; j < j_max; j++) {
+        code_append_inst(code, OP_JLT, (operands_t){.uui = {0, 1, 2 * j + 1}});
+        code_append_inst(code, OP_INC, (operands_t){.u = {0}});
+    }
+
+    code_append_inst(code, OP_JMP, (operands_t){.i = {-2 * j_max}});
+    // }
+
     code_append_inst(code, OP_NOP, (operands_t){});
     code_append_inst(code, OP_END, (operands_t){});
 
