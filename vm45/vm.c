@@ -27,7 +27,7 @@
     \
     INLINE prefix ## _array_t * prefix ## _array_new(void) { \
         prefix ## _array_t * s = (prefix ## _array_t *) malloc(sizeof(prefix ## _array_t)); \
-        s->cap = 1024u; \
+        s->cap = 128u; \
         s->len = 0u; \
         s->items = (type *) malloc(s->cap * sizeof(type)); \
         return s; \
@@ -94,6 +94,8 @@ typedef enum opcode_name_t {
     OP_JLT,
     OP_JEQ,
     OP_JMP,
+    OP_WHILE_LT,
+    OP_WHILE_LT_ITER,
     OP_END
 } opcode_name_t;
 
@@ -352,6 +354,8 @@ object_t * frame_exec(struct frame_t * frame) {
         &&L_OP_JLT,
         &&L_OP_JEQ,
         &&L_OP_JMP,
+        &&L_OP_WHILE_LT,
+        &&L_OP_WHILE_LT_ITER,
         &&L_OP_END
     };
 
@@ -363,8 +367,16 @@ object_t * frame_exec(struct frame_t * frame) {
         inst->opcode.addr = opcode_addresses[inst->opcode.name];
     }
 
+    // L_OP_WHILE_LT
+    inst_t * inst0;
+    inst_t * inst1;
+    inst_t * inst2;
+    size_t h;
+    inst_array_t * insts0 = inst_array_new();
+
     #define DISPATCH inst++; goto *inst->opcode.addr
     #define DISPATCH_JUMP(dist) inst += dist; goto *inst->opcode.addr
+
 
     // goto first inst
     inst = &insts->items[0];
@@ -489,6 +501,55 @@ object_t * frame_exec(struct frame_t * frame) {
 
     L_OP_JMP:
         DISPATCH_JUMP(inst->operands.i.a);
+    
+    // L_OP_WHILE_LT_INIT:
+    //     inst0 = inst + 1;
+    //     inst1 = inst + 2;
+    //     h = 0;
+    //     insts0->items[1] = *inst0;
+    //     DISPATCH;
+
+    // L_OP_WHILE_LT:
+    //     while (regs->items[inst->operands.uui.a].v.i < regs->items[inst->operands.uui.b].v.i) {
+    //         if (h == inst->operands.uui.c - 1) {
+    //             h = 0;
+    //         }
+
+    //         insts0->items[0] = *(inst1 + h);
+    //         inst = &insts0->items[0];
+    //         h++;
+    //         DISPATCH;
+    //     }
+
+    //     DISPATCH_JUMP(inst->operands.uui.c);
+
+    L_OP_WHILE_LT:
+        inst0 = inst;
+        inst1 = inst + 1;
+        inst2 = inst + 2;
+        insts0->items[0] = *inst1;
+        insts0->items[1] = *inst1;
+        h = 0;
+        inst = insts0->items;
+        DISPATCH;
+
+    L_OP_WHILE_LT_ITER:
+        if (regs->items[inst->operands.uui.a].v.i < regs->items[inst->operands.uui.b].v.i) {
+            // printf("a\n");
+            insts0->items[0] = *(inst2 + h);
+            h++;
+
+            if (h == inst0->operands.uui.c - 0) {
+                h = 0;
+            }
+
+            inst = insts0->items;
+            DISPATCH;
+        } else {
+            // printf("b\n");
+            inst = inst0 + inst0->operands.uui.c;
+            DISPATCH;
+        }
 
     L_OP_END:
         ;
@@ -518,18 +579,22 @@ void test1() {
     code_append_inst(code, OP_INC, (operands_t){.u = {0}});
     code_append_inst(code, OP_JMP, (operands_t){.i = {-2}});
     */
-
+    
     // {
-    int j;
-    int j_max = 256;
+    // int j;
+    // int j_max = 16;
 
-    for (j = j_max; j > 0; j--) {
-        code_append_inst(code, OP_JLT, (operands_t){.uui = {0, 1, 2 * j + 1}});
-        code_append_inst(code, OP_INC, (operands_t){.u = {0}});
-    }
-
-    code_append_inst(code, OP_JMP, (operands_t){.i = {-2 * j_max}});
+    // for (j = 1; j < j_max; j++) {
+    //     code_append_inst(code, OP_JLT, (operands_t){.uui = {0, 1, 2 * j + 1}});
+    //     code_append_inst(code, OP_INC, (operands_t){.u = {0}});
     // }
+
+    // code_append_inst(code, OP_JMP, (operands_t){.i = {-2 * j_max}});
+    // }
+
+    code_append_inst(code, OP_WHILE_LT, (operands_t){.uui = {0, 1, 3}});
+    code_append_inst(code, OP_WHILE_LT_ITER, (operands_t){.uui = {0, 1, 2}});
+    code_append_inst(code, OP_INC, (operands_t){.u = {0}});
 
     code_append_inst(code, OP_NOP, (operands_t){});
     code_append_inst(code, OP_END, (operands_t){});
