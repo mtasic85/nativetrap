@@ -389,9 +389,9 @@ object_t * frame_exec(struct frame_t * frame) {
         inst->opcode.addr = opcode_addresses[inst->opcode.name];
     }
 
-    int ri0;
-    int ri1;
-    int ri2;
+    register int ri0;
+    register int ri1;
+    register int ri2;
 
     #define DISPATCH inst++; goto *inst->opcode.addr
     #define DISPATCH_JUMP(dist) inst += dist; goto *inst->opcode.addr
@@ -621,10 +621,9 @@ void test1() {
     /*
     r0 = 0
     r1 = 200000000
-    r2 = 1
 
     while r0 < r1
-        r0 += r2
+        r0 += 1
     */
     vm_t * vm = vm_new();
     thread_t * thread = vm->main_thread;
