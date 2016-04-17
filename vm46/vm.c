@@ -633,22 +633,16 @@ void test1() {
     code_append_inst(code, OP_I_CONST, (operands_t){.ui = {0, 0}});
     code_append_inst(code, OP_I_CONST, (operands_t){.ui = {1, 200000000}});
     
-    /*
-    code_append_inst(code, OP_JLT, (operands_t){.uui = {0, 1, 3}});
-    code_append_inst(code, OP_INC, (operands_t){.u = {0}});
-    code_append_inst(code, OP_JMP, (operands_t){.i = {-2}});
-    */
-
     // {
     code_append_inst(code, OP_MOV_I_ri, (operands_t){.uu = {0, 0}});
     code_append_inst(code, OP_MOV_I_ri, (operands_t){.uu = {1, 1}});
 
     int j;
-    int j_max = 256;
+    int j_max = 128;
 
     for (j = j_max; j > 0; j--) {
         code_append_inst(code, OP_JLT_ri0ri1, (operands_t){.i = {2 * j + 1}});
-        code_append_inst(code, OP_INC_ri0, (operands_t){.u = {0}});
+        code_append_inst(code, OP_INC_ri0, (operands_t){});
     }
 
     code_append_inst(code, OP_JMP, (operands_t){.i = {-2 * j_max}});
