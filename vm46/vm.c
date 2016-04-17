@@ -1,5 +1,3 @@
-// DESE NOT WORK
-
 // gcc -Og -c vm.c && gcc -o vm vm.o && ls -l vm && time ./vm
 // gcc -O3 -c vm.c && gcc -o vm vm.o && ls -l vm && time ./vm
 // clang -O3 -c vm.c && clang -o vm vm.o && ls -l vm && time ./vm
@@ -15,6 +13,10 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+// mmap
+#include <stddef.h>
+#include <sys/mman.h>
+
 #define INLINE static __inline__
 
 // array factory
@@ -29,7 +31,7 @@
     \
     INLINE prefix ## _array_t * prefix ## _array_new(void) { \
         prefix ## _array_t * s = (prefix ## _array_t *) malloc(sizeof(prefix ## _array_t)); \
-        s->cap = 128u; \
+        s->cap = 1024u; \
         s->len = 0u; \
         s->items = (type *) malloc(s->cap * sizeof(type)); \
         return s; \
@@ -90,14 +92,23 @@ typedef enum opcode_name_t {
     OP_U_CONST,
     OP_NOP,
     OP_MOV,
+    OP_MOV_I_ri,
+    OP_MOV_ri_I,
     OP_INC,
+    OP_INC_I,
+    OP_INC_ri0,
+    OP_INC_ri1,
+    OP_INC_ri2,
     OP_ADD,
+    OP_ADD_II,
     OP_LT,
+    OP_LT_II,
     OP_JLT,
+    OP_JLT_II,
+    OP_JLT_ri0ri1,
     OP_JEQ,
+    OP_JEQ_II,
     OP_JMP,
-    OP_WHILE_LT,
-    OP_WHILE_LT_ITER,
     OP_END
 } opcode_name_t;
 
@@ -350,14 +361,23 @@ object_t * frame_exec(struct frame_t * frame) {
         &&L_OP_U_CONST,
         &&L_OP_NOP,
         &&L_OP_MOV,
+        &&L_OP_MOV_I_ri,
+        &&L_OP_MOV_ri_I,
         &&L_OP_INC,
+        &&L_OP_INC_I,
+        &&L_OP_INC_ri0,
+        &&L_OP_INC_ri1,
+        &&L_OP_INC_ri2,
         &&L_OP_ADD,
+        &&L_OP_ADD_II,
         &&L_OP_LT,
+        &&L_OP_LT_II,
         &&L_OP_JLT,
+        &&L_OP_JLT_II,
+        &&L_OP_JLT_ri0ri1,
         &&L_OP_JEQ,
+        &&L_OP_JEQ_II,
         &&L_OP_JMP,
-        &&L_OP_WHILE_LT,
-        &&L_OP_WHILE_LT_ITER,
         &&L_OP_END
     };
 
@@ -369,21 +389,17 @@ object_t * frame_exec(struct frame_t * frame) {
         inst->opcode.addr = opcode_addresses[inst->opcode.name];
     }
 
-    // L_OP_WHILE_LT
-    inst_t * inst0;
-    inst_t * inst1;
-    inst_t * inst2;
-    size_t h;
-    inst_array_t * insts0 = inst_array_new();
+    int ri0;
+    int ri1;
+    int ri2;
 
     #define DISPATCH inst++; goto *inst->opcode.addr
     #define DISPATCH_JUMP(dist) inst += dist; goto *inst->opcode.addr
-
-
+    
     // goto first inst
     inst = &insts->items[0];
     goto *inst->opcode.addr;
-
+    
     L_OP_I_CONST:
         regs->items[inst->operands.ui.a] = (object_t){
             .t = TYPE_I,
@@ -409,21 +425,71 @@ object_t * frame_exec(struct frame_t * frame) {
         regs->items[inst->operands.uu.a] = regs->items[inst->operands.uu.b];
         DISPATCH;
 
+    L_OP_MOV_I_ri:
+        switch (inst->operands.uu.a) {
+            case 0:
+                ri0 = regs->items[inst->operands.uu.b].v.i;
+                break;
+            case 1:
+                ri1 = regs->items[inst->operands.uu.b].v.i;
+                break;
+            case 2:
+                ri2 = regs->items[inst->operands.uu.b].v.i;
+                break;
+            default:
+                ;
+        }
+        
+        DISPATCH;
+
+    L_OP_MOV_ri_I:
+        switch (inst->operands.uu.a) {
+            case 0:
+                regs->items[inst->operands.uu.b].v.i = ri0;
+                break;
+            case 1:
+                regs->items[inst->operands.uu.b].v.i = ri1;
+                break;
+            case 2:
+                regs->items[inst->operands.uu.b].v.i = ri2;
+                break;
+            default:
+                ;
+        }
+        
+        DISPATCH;
+
     L_OP_INC:
-        // switch (regs->items[inst->operands.u.a].t) {
-        //     case TYPE_I:
+        switch (regs->items[inst->operands.u.a].t) {
+            case TYPE_I:
                 regs->items[inst->operands.u.a].v.i++;
-        //         break;
-        //     default:
-        //         ;
-        // }
+                break;
+            default:
+                ;
+        }
+        DISPATCH;
+
+    L_OP_INC_I:
+        regs->items[inst->operands.u.a].v.i++;
+        DISPATCH;
+
+    L_OP_INC_ri0:
+        ri0++;
+        DISPATCH;
+
+    L_OP_INC_ri1:
+        ri1++;
+        DISPATCH;
+
+    L_OP_INC_ri2:
+        ri2++;
         DISPATCH;
 
     L_OP_ADD:
-        // switch (regs->items[inst->operands.uuu.b].t) {
-        //     case TYPE_I:
-        //         switch (regs->items[inst->operands.uuu.c].t) {
-        //             case TYPE_I:
+        switch (regs->items[inst->operands.uuu.b].t) {
+            case TYPE_I:
+                switch (regs->items[inst->operands.uuu.c].t) {
+                    case TYPE_I:
                         regs->items[inst->operands.uuu.a] = (object_t){
                             .t = TYPE_I,
                             .v = (value_t){.i = (
@@ -431,21 +497,31 @@ object_t * frame_exec(struct frame_t * frame) {
                                 regs->items[inst->operands.uuu.c].v.i
                             )}
                         };
-        //                 break;
-        //             default:
-        //                 ;
-        //         }
-        //         break;
-        //     default:
-        //         ;
-        // }
+                        break;
+                    default:
+                        ;
+                }
+                break;
+            default:
+                ;
+        }
+        DISPATCH;
+
+    L_OP_ADD_II:
+        regs->items[inst->operands.uuu.a] = (object_t){
+            .t = TYPE_I,
+            .v = (value_t){.i = (
+                regs->items[inst->operands.uuu.b].v.i +
+                regs->items[inst->operands.uuu.c].v.i
+            )}
+        };
         DISPATCH;
 
     L_OP_LT:
-        // switch (regs->items[inst->operands.uuu.b].t) {
-        //     case TYPE_I:
-        //         switch (regs->items[inst->operands.uuu.c].t) {
-        //             case TYPE_I:
+        switch (regs->items[inst->operands.uuu.b].t) {
+            case TYPE_I:
+                switch (regs->items[inst->operands.uuu.c].t) {
+                    case TYPE_I:
                         regs->items[inst->operands.uuu.a] = (object_t){
                             .t = TYPE_I,
                             .v = (value_t){.i = (
@@ -453,105 +529,87 @@ object_t * frame_exec(struct frame_t * frame) {
                                 regs->items[inst->operands.uuu.c].v.i
                             )}
                         };
-        //                 break;
-        //             default:
-        //                 ;
-        //         }
-        //         break;
-        //     default:
-        //         ;
-        // }
+                        break;
+                    default:
+                        ;
+                }
+                break;
+            default:
+                ;
+        }
+        DISPATCH;
+
+    L_OP_LT_II:
+        regs->items[inst->operands.uuu.a] = (object_t){
+            .t = TYPE_I,
+            .v = (value_t){.i = (
+                regs->items[inst->operands.uuu.b].v.i <
+                regs->items[inst->operands.uuu.c].v.i
+            )}
+        };
         DISPATCH;
 
     L_OP_JLT:
-        // switch (regs->items[inst->operands.uui.a].t) {
-        //     case TYPE_I:
-        //         switch (regs->items[inst->operands.uui.b].t) {
-        //             case TYPE_I:
+        switch (regs->items[inst->operands.uui.a].t) {
+            case TYPE_I:
+                switch (regs->items[inst->operands.uui.b].t) {
+                    case TYPE_I:
                         if (regs->items[inst->operands.uui.a].v.i < regs->items[inst->operands.uui.b].v.i) {
                             DISPATCH;
                         } else {
                             DISPATCH_JUMP(inst->operands.uui.c);
                         }
-        //                 break;
-        //             default:
-        //                 ;
-        //         }
-        //         break;
-        //     default:
-        //         ;
-        // }
+                        break;
+                    default:
+                        ;
+                }
+                break;
+            default:
+                ;
+        }
+
+    L_OP_JLT_II:
+        if (regs->items[inst->operands.uui.a].v.i < regs->items[inst->operands.uui.b].v.i) {
+            DISPATCH;
+        } else {
+            DISPATCH_JUMP(inst->operands.uui.c);
+        }
+
+    L_OP_JLT_ri0ri1:
+        if (ri0 < ri1) {
+            DISPATCH;
+        } else {
+            DISPATCH_JUMP(inst->operands.i.a);
+        }
 
     L_OP_JEQ:
-        // switch (regs->items[inst->operands.uui.a].t) {
-        //     case TYPE_I:
-        //         switch (regs->items[inst->operands.uui.b].t) {
-        //             case TYPE_I:
+        switch (regs->items[inst->operands.uui.a].t) {
+            case TYPE_I:
+                switch (regs->items[inst->operands.uui.b].t) {
+                    case TYPE_I:
                         if (regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i) {
                             DISPATCH;
                         } else {
                             DISPATCH_JUMP(inst->operands.uui.c);
                         }
-        //                 break;
-        //             default:
-        //                 ;
-        //         }
-        //         break;
-        //     default:
-        //         ;
-        // }
+                        break;
+                    default:
+                        ;
+                }
+                break;
+            default:
+                ;
+        }
+
+    L_OP_JEQ_II:
+        if (regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i) {
+            DISPATCH;
+        } else {
+            DISPATCH_JUMP(inst->operands.uui.c);
+        }
 
     L_OP_JMP:
         DISPATCH_JUMP(inst->operands.i.a);
-    
-    // L_OP_WHILE_LT_INIT:
-    //     inst0 = inst + 1;
-    //     inst1 = inst + 2;
-    //     h = 0;
-    //     insts0->items[1] = *inst0;
-    //     DISPATCH;
-
-    // L_OP_WHILE_LT:
-    //     while (regs->items[inst->operands.uui.a].v.i < regs->items[inst->operands.uui.b].v.i) {
-    //         if (h == inst->operands.uui.c - 1) {
-    //             h = 0;
-    //         }
-
-    //         insts0->items[0] = *(inst1 + h);
-    //         inst = &insts0->items[0];
-    //         h++;
-    //         DISPATCH;
-    //     }
-
-    //     DISPATCH_JUMP(inst->operands.uui.c);
-
-    L_OP_WHILE_LT:
-        inst0 = inst;
-        inst1 = inst + 1;
-        inst2 = inst + 2;
-        insts0->items[0] = *inst1;
-        insts0->items[1] = *inst1;
-        h = 0;
-        inst = insts0->items;
-        DISPATCH;
-
-    L_OP_WHILE_LT_ITER:
-        if (regs->items[inst->operands.uui.a].v.i < regs->items[inst->operands.uui.b].v.i) {
-            // printf("a\n");
-            insts0->items[0] = *(inst2 + h);
-            h++;
-
-            if (h == inst0->operands.uui.c - 0) {
-                h = 0;
-            }
-
-            inst = insts0->items;
-            DISPATCH;
-        } else {
-            // printf("b\n");
-            inst = inst0 + inst0->operands.uui.c;
-            DISPATCH;
-        }
 
     L_OP_END:
         ;
@@ -574,29 +632,29 @@ void test1() {
     
     code_append_inst(code, OP_I_CONST, (operands_t){.ui = {0, 0}});
     code_append_inst(code, OP_I_CONST, (operands_t){.ui = {1, 200000000}});
-    code_append_inst(code, OP_I_CONST, (operands_t){.ui = {2, 1}});
     
     /*
     code_append_inst(code, OP_JLT, (operands_t){.uui = {0, 1, 3}});
     code_append_inst(code, OP_INC, (operands_t){.u = {0}});
     code_append_inst(code, OP_JMP, (operands_t){.i = {-2}});
     */
-    
+
     // {
-    // int j;
-    // int j_max = 16;
+    code_append_inst(code, OP_MOV_I_ri, (operands_t){.uu = {0, 0}});
+    code_append_inst(code, OP_MOV_I_ri, (operands_t){.uu = {1, 1}});
 
-    // for (j = 1; j < j_max; j++) {
-    //     code_append_inst(code, OP_JLT, (operands_t){.uui = {0, 1, 2 * j + 1}});
-    //     code_append_inst(code, OP_INC, (operands_t){.u = {0}});
+    int j;
+    int j_max = 256;
+
+    for (j = j_max; j > 0; j--) {
+        code_append_inst(code, OP_JLT_ri0ri1, (operands_t){.i = {2 * j + 1}});
+        code_append_inst(code, OP_INC_ri0, (operands_t){.u = {0}});
+    }
+
+    code_append_inst(code, OP_JMP, (operands_t){.i = {-2 * j_max}});
+    code_append_inst(code, OP_MOV_ri_I, (operands_t){.uu = {0, 0}});
+    code_append_inst(code, OP_MOV_ri_I, (operands_t){.uu = {1, 1}});
     // }
-
-    // code_append_inst(code, OP_JMP, (operands_t){.i = {-2 * j_max}});
-    // }
-
-    code_append_inst(code, OP_WHILE_LT, (operands_t){.uui = {0, 1, 3}});
-    code_append_inst(code, OP_WHILE_LT_ITER, (operands_t){.uui = {0, 1, 2}});
-    code_append_inst(code, OP_INC, (operands_t){.u = {0}});
 
     code_append_inst(code, OP_NOP, (operands_t){});
     code_append_inst(code, OP_END, (operands_t){});
@@ -606,8 +664,6 @@ void test1() {
 
     printf("r0: %d\n", frame->regs->items[0].v.i);
     printf("r1: %d\n", frame->regs->items[1].v.i);
-    printf("r2: %d\n", frame->regs->items[2].v.i);
-    printf("r3: %d\n", frame->regs->items[3].v.i);
 
     frame_del(frame);
     code_del(code);
