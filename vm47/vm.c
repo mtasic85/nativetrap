@@ -107,10 +107,35 @@ MAKE_ARRAY(object, object_t);
 
 typedef enum opcode_name_t {
     OP_I_CONST,
+    OP_I8_CONST,
+    OP_I16_CONST,
+    OP_I32_CONST,
+    OP_I64_CONST,
     OP_U_CONST,
+    OP_U8_CONST,
+    OP_U16_CONST,
+    OP_U32_CONST,
+    OP_U64_CONST,
+    OP_F_CONST,
+    OP_F32_CONST,
+    OP_F64_CONST,
+    OP_F96_CONST,
     OP_NOP,
     OP_MOV,
     OP_MOV_I_ri,
+    OP_MOV_I8_ri8,
+    OP_MOV_I16_ri16,
+    OP_MOV_I32_ri32,
+    OP_MOV_I64_ri64,
+    OP_MOV_U_ru,
+    OP_MOV_U8_ru8,
+    OP_MOV_U16_ru16,
+    OP_MOV_U32_ru32,
+    OP_MOV_U64_ru64,
+    OP_MOV_F_rf,
+    OP_MOV_F32_rf32,
+    OP_MOV_F64_rf64,
+    OP_MOV_F96_rf96,
     OP_MOV_ri_I,
     OP_INC,
     OP_INC_I,
@@ -375,10 +400,35 @@ object_t * frame_exec(struct frame_t * frame) {
 
     void * opcode_addresses[] = {
         &&L_OP_I_CONST,
+        &&L_OP_I8_CONST,
+        &&L_OP_I16_CONST,
+        &&L_OP_I32_CONST,
+        &&L_OP_I64_CONST,
         &&L_OP_U_CONST,
+        &&L_OP_U8_CONST,
+        &&L_OP_U16_CONST,
+        &&L_OP_U32_CONST,
+        &&L_OP_U64_CONST,
+        &&L_OP_F_CONST,
+        &&L_OP_F32_CONST,
+        &&L_OP_F64_CONST,
+        &&L_OP_F96_CONST,
         &&L_OP_NOP,
         &&L_OP_MOV,
         &&L_OP_MOV_I_ri,
+        &&L_OP_MOV_I8_ri8,
+        &&L_OP_MOV_I16_ri16,
+        &&L_OP_MOV_I32_ri32,
+        &&L_OP_MOV_I64_ri64,
+        &&L_OP_MOV_U_ru,
+        &&L_OP_MOV_U8_ru8,
+        &&L_OP_MOV_U16_ru16,
+        &&L_OP_MOV_U32_ru32,
+        &&L_OP_MOV_U64_ru64,
+        &&L_OP_MOV_F_rf,
+        &&L_OP_MOV_F32_rf32,
+        &&L_OP_MOV_F64_rf64,
+        &&L_OP_MOV_F96_rf96,
         &&L_OP_MOV_ri_I,
         &&L_OP_INC,
         &&L_OP_INC_I,
@@ -405,8 +455,21 @@ object_t * frame_exec(struct frame_t * frame) {
         inst->opcode.addr = opcode_addresses[inst->opcode.name];
     }
 
+    // NOTE: more than 3 registers doubles the time of execution!
     register int ri[3];
+    register int8_t ri8[3];
+    register int16_t ri16[3];
+    register int32_t ri32[3];
+    register int64_t ri64[3];
+    register unsigned int ru[3];
+    register uint8_t ru8[3];
+    register uint16_t ru16[3];
+    register uint32_t ru32[3];
+    register uint64_t ru64[3];
     register float rf[3];
+    register float rf32[3];
+    register double rf64[3];
+    register long double rf96[3];
 
     #define DISPATCH inst++; goto *inst->opcode.addr
     #define DISPATCH_JUMP(dist) inst += dist; goto *inst->opcode.addr
@@ -415,59 +478,30 @@ object_t * frame_exec(struct frame_t * frame) {
     inst = &insts->items[0];
     goto *inst->opcode.addr;
     
-    L_OP_I_CONST:
-        regs->items[inst->operands.ui.a] = (object_t){
-            .t = TYPE_I,
-            .v = (value_t){
-                .i = inst->operands.ui.b
-            }
-        };
-        DISPATCH;
+    #define MAKE_L_OP_CONST(TYPE1, TYPE2) \
+        L_OP_ ## TYPE2 ## _CONST: \
+            regs->items[inst->operands.u ## TYPE1 .a] = (object_t){ \
+                .t = TYPE_ ## TYPE2, \
+                .v = (value_t){ \
+                    .TYPE1 = inst->operands.u ## TYPE1 .b \
+                } \
+            }; \
+            DISPATCH;
 
-    L_OP_I8_CONST:
-        regs->items[inst->operands.ui.a] = (object_t){
-            .t = TYPE_I8,
-            .v = (value_t){
-                .i8 = inst->operands.ui.b
-            }
-        };
-        DISPATCH;
-
-    L_OP_I16_CONST:
-        regs->items[inst->operands.ui.a] = (object_t){
-            .t = TYPE_I16,
-            .v = (value_t){
-                .i16 = inst->operands.ui.b
-            }
-        };
-        DISPATCH;
-
-    L_OP_I32_CONST:
-        regs->items[inst->operands.ui.a] = (object_t){
-            .t = TYPE_I32,
-            .v = (value_t){
-                .i32 = inst->operands.ui.b
-            }
-        };
-        DISPATCH;
-
-    L_OP_I64_CONST:
-        regs->items[inst->operands.ui.a] = (object_t){
-            .t = TYPE_I64,
-            .v = (value_t){
-                .i64 = inst->operands.ui.b
-            }
-        };
-        DISPATCH;
-
-    L_OP_U_CONST:
-        regs->items[inst->operands.uu.a] = (object_t){
-            .t = TYPE_U,
-            .v = (value_t){
-                .u = inst->operands.uu.b
-            }
-        };
-        DISPATCH;
+    MAKE_L_OP_CONST(i, I);
+    MAKE_L_OP_CONST(i8, I8);
+    MAKE_L_OP_CONST(i16, I16);
+    MAKE_L_OP_CONST(i32, I32);
+    MAKE_L_OP_CONST(i64, I64);
+    MAKE_L_OP_CONST(u, U);
+    MAKE_L_OP_CONST(u8, U8);
+    MAKE_L_OP_CONST(u16, U16);
+    MAKE_L_OP_CONST(u32, U32);
+    MAKE_L_OP_CONST(u64, U64);
+    MAKE_L_OP_CONST(f, F);
+    MAKE_L_OP_CONST(f32, F32);
+    MAKE_L_OP_CONST(f64, F64);
+    MAKE_L_OP_CONST(f96, F96);
 
     L_OP_NOP:
         DISPATCH;
@@ -476,38 +510,31 @@ object_t * frame_exec(struct frame_t * frame) {
         regs->items[inst->operands.uu.a] = regs->items[inst->operands.uu.b];
         DISPATCH;
 
-    L_OP_MOV_I_ri:
-        switch (inst->operands.uu.a) {
-            case 0:
-                ri[0] = regs->items[inst->operands.uu.b].v.i;
-                break;
-            case 1:
-                ri[1] = regs->items[inst->operands.uu.b].v.i;
-                break;
-            case 2:
-                ri[2] = regs->items[inst->operands.uu.b].v.i;
-                break;
-            default:
-                ;
-        }
-        
-        DISPATCH;
+    // L_OP_MOV_I_ri:
+    //     ri[inst->operands.uu.b] = regs->items[inst->operands.uu.a].v.i;
+    //     DISPATCH;
+    #define MAKE_L_OP_MOV_TO_REG(TYPE1, TYPE2) \
+        L_OP_MOV_ ## TYPE2 ## _r ## TYPE1: \
+            r ## TYPE1 [inst->operands.uu.b] = regs->items[inst->operands.uu.a].v.TYPE1; \
+            DISPATCH;
+
+    MAKE_L_OP_MOV_TO_REG(i, I);
+    MAKE_L_OP_MOV_TO_REG(i8, I8);
+    MAKE_L_OP_MOV_TO_REG(i16, I16);
+    MAKE_L_OP_MOV_TO_REG(i32, I32);
+    MAKE_L_OP_MOV_TO_REG(i64, I64);
+    MAKE_L_OP_MOV_TO_REG(u, U);
+    MAKE_L_OP_MOV_TO_REG(u8, U8);
+    MAKE_L_OP_MOV_TO_REG(u16, U16);
+    MAKE_L_OP_MOV_TO_REG(u32, U32);
+    MAKE_L_OP_MOV_TO_REG(u64, U64);
+    MAKE_L_OP_MOV_TO_REG(f, F);
+    MAKE_L_OP_MOV_TO_REG(f32, F32);
+    MAKE_L_OP_MOV_TO_REG(f64, F64);
+    MAKE_L_OP_MOV_TO_REG(f96, F96);
 
     L_OP_MOV_ri_I:
-        switch (inst->operands.uu.a) {
-            case 0:
-                regs->items[inst->operands.uu.b].v.i = ri[0];
-                break;
-            case 1:
-                regs->items[inst->operands.uu.b].v.i = ri[1];
-                break;
-            case 2:
-                regs->items[inst->operands.uu.b].v.i = ri[2];
-                break;
-            default:
-                ;
-        }
-        
+        regs->items[inst->operands.uu.b].v.i = ri[inst->operands.uu.a];
         DISPATCH;
 
     L_OP_INC:
