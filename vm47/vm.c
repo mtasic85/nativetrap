@@ -137,6 +137,19 @@ typedef enum opcode_name_t {
     OP_MOV_F64_rf64,
     OP_MOV_F96_rf96,
     OP_MOV_ri_I,
+    OP_MOV_ri8_I8,
+    OP_MOV_ri16_I16,
+    OP_MOV_ri32_I32,
+    OP_MOV_ri64_I64,
+    OP_MOV_ru_U,
+    OP_MOV_ru8_U8,
+    OP_MOV_ru16_U16,
+    OP_MOV_ru32_U32,
+    OP_MOV_ru64_U64,
+    OP_MOV_rf_F,
+    OP_MOV_rf32_F32,
+    OP_MOV_rf64_F64,
+    OP_MOV_rf96_F96,
     OP_INC,
     OP_INC_I,
     OP_INC_ri,
@@ -430,6 +443,19 @@ object_t * frame_exec(struct frame_t * frame) {
         &&L_OP_MOV_F64_rf64,
         &&L_OP_MOV_F96_rf96,
         &&L_OP_MOV_ri_I,
+        &&L_OP_MOV_ri8_I8,
+        &&L_OP_MOV_ri16_I16,
+        &&L_OP_MOV_ri32_I32,
+        &&L_OP_MOV_ri64_I64,
+        &&L_OP_MOV_ru_U,
+        &&L_OP_MOV_ru8_U8,
+        &&L_OP_MOV_ru16_U16,
+        &&L_OP_MOV_ru32_U32,
+        &&L_OP_MOV_ru64_U64,
+        &&L_OP_MOV_rf_F,
+        &&L_OP_MOV_rf32_F32,
+        &&L_OP_MOV_rf64_F64,
+        &&L_OP_MOV_rf96_F96,
         &&L_OP_INC,
         &&L_OP_INC_I,
         &&L_OP_INC_ri,
@@ -510,9 +536,6 @@ object_t * frame_exec(struct frame_t * frame) {
         regs->items[inst->operands.uu.a] = regs->items[inst->operands.uu.b];
         DISPATCH;
 
-    // L_OP_MOV_I_ri:
-    //     ri[inst->operands.uu.b] = regs->items[inst->operands.uu.a].v.i;
-    //     DISPATCH;
     #define MAKE_L_OP_MOV_TO_REG(TYPE1, TYPE2) \
         L_OP_MOV_ ## TYPE2 ## _r ## TYPE1: \
             r ## TYPE1 [inst->operands.uu.b] = regs->items[inst->operands.uu.a].v.TYPE1; \
@@ -533,9 +556,25 @@ object_t * frame_exec(struct frame_t * frame) {
     MAKE_L_OP_MOV_TO_REG(f64, F64);
     MAKE_L_OP_MOV_TO_REG(f96, F96);
 
-    L_OP_MOV_ri_I:
-        regs->items[inst->operands.uu.b].v.i = ri[inst->operands.uu.a];
-        DISPATCH;
+    #define MAKE_L_OP_MOV_FROM_REG(TYPE1, TYPE2) \
+        L_OP_MOV_r ## TYPE1 ## _ ## TYPE2: \
+            regs->items[inst->operands.uu.b].v.TYPE1 = r ## TYPE1[inst->operands.uu.a]; \
+            DISPATCH;
+
+    MAKE_L_OP_MOV_FROM_REG(i, I);
+    MAKE_L_OP_MOV_FROM_REG(i8, I8);
+    MAKE_L_OP_MOV_FROM_REG(i16, I16);
+    MAKE_L_OP_MOV_FROM_REG(i32, I32);
+    MAKE_L_OP_MOV_FROM_REG(i64, I64);
+    MAKE_L_OP_MOV_FROM_REG(u, U);
+    MAKE_L_OP_MOV_FROM_REG(u8, U8);
+    MAKE_L_OP_MOV_FROM_REG(u16, U16);
+    MAKE_L_OP_MOV_FROM_REG(u32, U32);
+    MAKE_L_OP_MOV_FROM_REG(u64, U64);
+    MAKE_L_OP_MOV_FROM_REG(f, F);
+    MAKE_L_OP_MOV_FROM_REG(f32, F32);
+    MAKE_L_OP_MOV_FROM_REG(f64, F64);
+    MAKE_L_OP_MOV_FROM_REG(f96, F96);
 
     L_OP_INC:
         switch (regs->items[inst->operands.u.a].t) {
