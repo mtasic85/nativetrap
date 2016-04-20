@@ -482,20 +482,20 @@ object_t * frame_exec(struct frame_t * frame) {
     }
 
     // NOTE: more than 3 registers doubles the time of execution!
-    register int ri[3];
-    register int8_t ri8[3];
-    register int16_t ri16[3];
-    register int32_t ri32[3];
-    register int64_t ri64[3];
-    register unsigned int ru[3];
-    register uint8_t ru8[3];
-    register uint16_t ru16[3];
-    register uint32_t ru32[3];
-    register uint64_t ru64[3];
-    register float rf[3];
-    register float rf32[3];
-    register double rf64[3];
-    register long double rf96[3];
+    int ri[3];
+    int8_t ri8[3];
+    int16_t ri16[3];
+    int32_t ri32[3];
+    int64_t ri64[3];
+    unsigned int ru[3];
+    uint8_t ru8[3];
+    uint16_t ru16[3];
+    uint32_t ru32[3];
+    uint64_t ru64[3];
+    float rf[3];
+    float rf32[3];
+    double rf64[3];
+    long double rf96[3];
 
     #define DISPATCH inst++; goto *inst->opcode.addr
     #define DISPATCH_JUMP(dist) inst += dist; goto *inst->opcode.addr
@@ -756,8 +756,8 @@ void test1() {
     int j_max = 128;
 
     for (j = j_max; j > 0; j--) {
-        code_append_inst(code, OP_JLT_ri0ri1, (operands_t){.i = {2 * j + 1}});
-        // code_append_inst(code, OP_JLT_riri, (operands_t){.uui = {0, 1, 2 * j + 1}});
+        // code_append_inst(code, OP_JLT_ri0ri1, (operands_t){.i = {2 * j + 1}});
+        code_append_inst(code, OP_JLT_riri, (operands_t){.uui = {0, 1, 2 * j + 1}});
         code_append_inst(code, OP_INC_ri, (operands_t){.u = {0}});
     }
 
