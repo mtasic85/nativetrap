@@ -13,6 +13,10 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+// mmap
+#include <stddef.h>
+#include <sys/mman.h>
+
 #define INLINE static __inline__
 
 // array factory
@@ -27,7 +31,7 @@
     \
     INLINE prefix ## _array_t * prefix ## _array_new(void) { \
         prefix ## _array_t * s = (prefix ## _array_t *) malloc(sizeof(prefix ## _array_t)); \
-        s->cap = 1024u; \
+        s->cap = 128u; \
         s->len = 0u; \
         s->items = (type *) malloc(s->cap * sizeof(type)); \
         return s; \
@@ -56,28 +60,7 @@
 
 typedef enum type_t {
     TYPE_I,
-    TYPE_I8,
-    TYPE_I16,
-    TYPE_I32,
-    TYPE_I64,
-    TYPE_U,
-    TYPE_U8,
-    TYPE_U16,
-    TYPE_U32,
-    TYPE_U64,
-    TYPE_F,
-    TYPE_F32,
-    TYPE_F64,
-    TYPE_BYTES,
-    TYPE_STR,
-    TYPE_STRUCT,
-    TYPE_UNION,
-    TYPE_ENUM,
-    TYPE_ARRAY,
-    TYPE_MAP,
-    TYPE_FUNC,
-    TYPE_CODE,
-    TYPE_OBJECT
+    TYPE_U
 } type_t;
 
 typedef union value_t {
@@ -94,6 +77,7 @@ typedef union value_t {
     float f;
     float f32;
     double f64;
+    long double f96;
 } value_t;
 
 typedef struct object_t {
@@ -105,62 +89,12 @@ MAKE_ARRAY(object, object_t);
 
 typedef enum opcode_name_t {
     OP_I_CONST,
-    OP_I8_CONST,
-    OP_I16_CONST,
-    OP_I32_CONST,
-    OP_I64_CONST,
     OP_U_CONST,
-    OP_U8_CONST,
-    OP_U16_CONST,
-    OP_U32_CONST,
-    OP_U64_CONST,
-    OP_F_CONST,
-    OP_F32_CONST,
-    OP_F64_CONST,
-    OP_F96_CONST,
     OP_NOP,
     OP_MOV,
-    OP_MOV_I_ri,
-    OP_MOV_I8_ri8,
-    OP_MOV_I16_ri16,
-    OP_MOV_I32_ri32,
-    OP_MOV_I64_ri64,
-    OP_MOV_U_ru,
-    OP_MOV_U8_ru8,
-    OP_MOV_U16_ru16,
-    OP_MOV_U32_ru32,
-    OP_MOV_U64_ru64,
-    OP_MOV_F_rf,
-    OP_MOV_F32_rf32,
-    OP_MOV_F64_rf64,
-    OP_MOV_F96_rf96,
-    OP_MOV_ri_I,
-    OP_MOV_ri8_I8,
-    OP_MOV_ri16_I16,
-    OP_MOV_ri32_I32,
-    OP_MOV_ri64_I64,
-    OP_MOV_ru_U,
-    OP_MOV_ru8_U8,
-    OP_MOV_ru16_U16,
-    OP_MOV_ru32_U32,
-    OP_MOV_ru64_U64,
-    OP_MOV_rf_F,
-    OP_MOV_rf32_F32,
-    OP_MOV_rf64_F64,
-    OP_MOV_rf96_F96,
-    OP_INC,
-    OP_INC_I,
-    OP_INC_ri,
     OP_ADD,
-    OP_ADD_II,
     OP_LT,
-    OP_LT_II,
-    OP_JLT,
-    OP_JLT_II,
-    OP_JLT_riri,
-    OP_JLT_ri0ri1,
     OP_JEQ,
-    OP_JEQ_II,
     OP_JMP,
     OP_END
 } opcode_name_t;
@@ -169,10 +103,6 @@ typedef union opcode_t {
     enum opcode_name_t name;
     void * addr;
 } opcode_t;
-
-typedef struct operands_u_t {
-    unsigned int a;
-} operands_u_t;
 
 typedef struct operands_ui_t {
     unsigned int a;
@@ -261,7 +191,6 @@ typedef struct operands_uuu_t {
 } operands_uuu_t;
 
 typedef union operands_t {
-    struct operands_u_t u;
     struct operands_ui_t ui;
     struct operands_ui8_t ui8;
     struct operands_ui16_t ui16;
@@ -411,62 +340,12 @@ object_t * frame_exec(struct frame_t * frame) {
 
     void * opcode_addresses[] = {
         &&L_OP_I_CONST,
-        &&L_OP_I8_CONST,
-        &&L_OP_I16_CONST,
-        &&L_OP_I32_CONST,
-        &&L_OP_I64_CONST,
         &&L_OP_U_CONST,
-        &&L_OP_U8_CONST,
-        &&L_OP_U16_CONST,
-        &&L_OP_U32_CONST,
-        &&L_OP_U64_CONST,
-        &&L_OP_F_CONST,
-        &&L_OP_F32_CONST,
-        &&L_OP_F64_CONST,
-        &&L_OP_F96_CONST,
         &&L_OP_NOP,
         &&L_OP_MOV,
-        &&L_OP_MOV_I_ri,
-        &&L_OP_MOV_I8_ri8,
-        &&L_OP_MOV_I16_ri16,
-        &&L_OP_MOV_I32_ri32,
-        &&L_OP_MOV_I64_ri64,
-        &&L_OP_MOV_U_ru,
-        &&L_OP_MOV_U8_ru8,
-        &&L_OP_MOV_U16_ru16,
-        &&L_OP_MOV_U32_ru32,
-        &&L_OP_MOV_U64_ru64,
-        &&L_OP_MOV_F_rf,
-        &&L_OP_MOV_F32_rf32,
-        &&L_OP_MOV_F64_rf64,
-        &&L_OP_MOV_F96_rf96,
-        &&L_OP_MOV_ri_I,
-        &&L_OP_MOV_ri8_I8,
-        &&L_OP_MOV_ri16_I16,
-        &&L_OP_MOV_ri32_I32,
-        &&L_OP_MOV_ri64_I64,
-        &&L_OP_MOV_ru_U,
-        &&L_OP_MOV_ru8_U8,
-        &&L_OP_MOV_ru16_U16,
-        &&L_OP_MOV_ru32_U32,
-        &&L_OP_MOV_ru64_U64,
-        &&L_OP_MOV_rf_F,
-        &&L_OP_MOV_rf32_F32,
-        &&L_OP_MOV_rf64_F64,
-        &&L_OP_MOV_rf96_F96,
-        &&L_OP_INC,
-        &&L_OP_INC_I,
-        &&L_OP_INC_ri,
         &&L_OP_ADD,
-        &&L_OP_ADD_II,
         &&L_OP_LT,
-        &&L_OP_LT_II,
-        &&L_OP_JLT,
-        &&L_OP_JLT_II,
-        &&L_OP_JLT_riri,
-        &&L_OP_JLT_ri0ri1,
         &&L_OP_JEQ,
-        &&L_OP_JEQ_II,
         &&L_OP_JMP,
         &&L_OP_END
     };
@@ -479,153 +358,36 @@ object_t * frame_exec(struct frame_t * frame) {
         inst->opcode.addr = opcode_addresses[inst->opcode.name];
     }
 
-    // NOTE: more than 3 registers doubles the time of execution!
-    int ri[3];
-    int8_t ri8[3];
-    int16_t ri16[3];
-    int32_t ri32[3];
-    int64_t ri64[3];
-    unsigned int ru[3];
-    uint8_t ru8[3];
-    uint16_t ru16[3];
-    uint32_t ru32[3];
-    uint64_t ru64[3];
-    float rf[3];
-    float rf32[3];
-    double rf64[3];
-    long double rf96[3];
-
     #define DISPATCH inst++; goto *inst->opcode.addr
     #define DISPATCH_JUMP(dist) inst += dist; goto *inst->opcode.addr
-    
+
     // goto first inst
     inst = &insts->items[0];
     goto *inst->opcode.addr;
-    
-    #define MAKE_L_OP_CONST(TYPE1, TYPE2) \
-        L_OP_ ## TYPE2 ## _CONST: \
-            regs->items[inst->operands.u ## TYPE1 .a] = (object_t){ \
-                .t = TYPE_ ## TYPE2, \
-                .v = (value_t){ \
-                    .TYPE1 = inst->operands.u ## TYPE1 .b \
-                } \
-            }; \
-            DISPATCH;
 
-    MAKE_L_OP_CONST(i, I);
-    MAKE_L_OP_CONST(i8, I8);
-    MAKE_L_OP_CONST(i16, I16);
-    MAKE_L_OP_CONST(i32, I32);
-    MAKE_L_OP_CONST(i64, I64);
-    MAKE_L_OP_CONST(u, U);
-    MAKE_L_OP_CONST(u8, U8);
-    MAKE_L_OP_CONST(u16, U16);
-    MAKE_L_OP_CONST(u32, U32);
-    MAKE_L_OP_CONST(u64, U64);
-    MAKE_L_OP_CONST(f, F);
-    MAKE_L_OP_CONST(f32, F32);
-    MAKE_L_OP_CONST(f64, F64);
-    MAKE_L_OP_CONST(f96, F96);
+    L_OP_I_CONST:
+        regs->items[inst->operands.ui.a] = (object_t){
+            .t = TYPE_I,
+            .v = (value_t){
+                .i = inst->operands.ui.b
+            }
+        };
+        DISPATCH;
+
+    L_OP_U_CONST:
+        regs->items[inst->operands.uu.a] = (object_t){
+            .t = TYPE_U,
+            .v = (value_t){
+                .u = inst->operands.uu.b
+            }
+        };
+        DISPATCH;
 
     L_OP_NOP:
         DISPATCH;
 
     L_OP_MOV:
         regs->items[inst->operands.uu.a] = regs->items[inst->operands.uu.b];
-        DISPATCH;
-
-    #define MAKE_L_OP_MOV_TO_REG(TYPE1, TYPE2) \
-        L_OP_MOV_ ## TYPE2 ## _r ## TYPE1: \
-            r ## TYPE1 [inst->operands.uu.b] = regs->items[inst->operands.uu.a].v.TYPE1; \
-            DISPATCH;
-
-    MAKE_L_OP_MOV_TO_REG(i, I);
-    MAKE_L_OP_MOV_TO_REG(i8, I8);
-    MAKE_L_OP_MOV_TO_REG(i16, I16);
-    MAKE_L_OP_MOV_TO_REG(i32, I32);
-    MAKE_L_OP_MOV_TO_REG(i64, I64);
-    MAKE_L_OP_MOV_TO_REG(u, U);
-    MAKE_L_OP_MOV_TO_REG(u8, U8);
-    MAKE_L_OP_MOV_TO_REG(u16, U16);
-    MAKE_L_OP_MOV_TO_REG(u32, U32);
-    MAKE_L_OP_MOV_TO_REG(u64, U64);
-    MAKE_L_OP_MOV_TO_REG(f, F);
-    MAKE_L_OP_MOV_TO_REG(f32, F32);
-    MAKE_L_OP_MOV_TO_REG(f64, F64);
-    MAKE_L_OP_MOV_TO_REG(f96, F96);
-
-    #define MAKE_L_OP_MOV_FROM_REG(TYPE1, TYPE2) \
-        L_OP_MOV_r ## TYPE1 ## _ ## TYPE2: \
-            regs->items[inst->operands.uu.b].v.TYPE1 = r ## TYPE1[inst->operands.uu.a]; \
-            DISPATCH;
-
-    MAKE_L_OP_MOV_FROM_REG(i, I);
-    MAKE_L_OP_MOV_FROM_REG(i8, I8);
-    MAKE_L_OP_MOV_FROM_REG(i16, I16);
-    MAKE_L_OP_MOV_FROM_REG(i32, I32);
-    MAKE_L_OP_MOV_FROM_REG(i64, I64);
-    MAKE_L_OP_MOV_FROM_REG(u, U);
-    MAKE_L_OP_MOV_FROM_REG(u8, U8);
-    MAKE_L_OP_MOV_FROM_REG(u16, U16);
-    MAKE_L_OP_MOV_FROM_REG(u32, U32);
-    MAKE_L_OP_MOV_FROM_REG(u64, U64);
-    MAKE_L_OP_MOV_FROM_REG(f, F);
-    MAKE_L_OP_MOV_FROM_REG(f32, F32);
-    MAKE_L_OP_MOV_FROM_REG(f64, F64);
-    MAKE_L_OP_MOV_FROM_REG(f96, F96);
-
-    L_OP_INC:
-        switch (regs->items[inst->operands.u.a].t) {
-            case TYPE_I:
-                regs->items[inst->operands.u.a].v.i++;
-                break;
-            case TYPE_I8:
-                regs->items[inst->operands.u.a].v.i8++;
-                break;
-            case TYPE_I16:
-                regs->items[inst->operands.u.a].v.i16++;
-                break;
-            case TYPE_I32:
-                regs->items[inst->operands.u.a].v.i32++;
-                break;
-            case TYPE_I64:
-                regs->items[inst->operands.u.a].v.i64++;
-                break;
-            case TYPE_U:
-                regs->items[inst->operands.u.a].v.u++;
-                break;
-            case TYPE_U8:
-                regs->items[inst->operands.u.a].v.u8++;
-                break;
-            case TYPE_U16:
-                regs->items[inst->operands.u.a].v.u16++;
-                break;
-            case TYPE_U32:
-                regs->items[inst->operands.u.a].v.u32++;
-                break;
-            case TYPE_U64:
-                regs->items[inst->operands.u.a].v.u64++;
-                break;
-            case TYPE_F:
-                regs->items[inst->operands.u.a].v.f++;
-                break;
-            case TYPE_F32:
-                regs->items[inst->operands.u.a].v.f32++;
-                break;
-            case TYPE_F64:
-                regs->items[inst->operands.u.a].v.f64++;
-                break;
-            default:
-                ;
-        }
-        DISPATCH;
-
-    L_OP_INC_I:
-        regs->items[inst->operands.u.a].v.i++;
-        DISPATCH;
-
-    L_OP_INC_ri:
-        ri[inst->operands.u.a]++;
         DISPATCH;
 
     L_OP_ADD:
@@ -650,16 +412,6 @@ object_t * frame_exec(struct frame_t * frame) {
         }
         DISPATCH;
 
-    L_OP_ADD_II:
-        regs->items[inst->operands.uuu.a] = (object_t){
-            .t = TYPE_I,
-            .v = (value_t){.i = (
-                regs->items[inst->operands.uuu.b].v.i +
-                regs->items[inst->operands.uuu.c].v.i
-            )}
-        };
-        DISPATCH;
-
     L_OP_LT:
         switch (regs->items[inst->operands.uuu.b].t) {
             case TYPE_I:
@@ -682,62 +434,13 @@ object_t * frame_exec(struct frame_t * frame) {
         }
         DISPATCH;
 
-    L_OP_LT_II:
-        regs->items[inst->operands.uuu.a] = (object_t){
-            .t = TYPE_I,
-            .v = (value_t){.i = (
-                regs->items[inst->operands.uuu.b].v.i <
-                regs->items[inst->operands.uuu.c].v.i
-            )}
-        };
-        DISPATCH;
-
-    L_OP_JLT:
-        switch (regs->items[inst->operands.uui.a].t) {
-            case TYPE_I:
-                switch (regs->items[inst->operands.uui.b].t) {
-                    case TYPE_I:
-                        if (regs->items[inst->operands.uui.a].v.i < regs->items[inst->operands.uui.b].v.i) {
-                            DISPATCH;
-                        } else {
-                            DISPATCH_JUMP(inst->operands.uui.c);
-                        }
-                        break;
-                    default:
-                        ;
-                }
-                break;
-            default:
-                ;
-        }
-
-    L_OP_JLT_II:
-        if (regs->items[inst->operands.uui.a].v.i < regs->items[inst->operands.uui.b].v.i) {
-            DISPATCH;
-        } else {
-            DISPATCH_JUMP(inst->operands.uui.c);
-        }
-
-    L_OP_JLT_riri:
-        if (ri[inst->operands.uui.a] < ri[inst->operands.uui.b]) {
-            DISPATCH;
-        } else {
-            DISPATCH_JUMP(inst->operands.uui.c);
-        }
-
-    L_OP_JLT_ri0ri1:
-        if (ri[0] < ri[1]) {
-            DISPATCH;
-        } else {
-            DISPATCH_JUMP(inst->operands.i.a);
-        }
-
     L_OP_JEQ:
         switch (regs->items[inst->operands.uui.a].t) {
             case TYPE_I:
                 switch (regs->items[inst->operands.uui.b].t) {
                     case TYPE_I:
-                        if (regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i) {
+                        // if (regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i) {
+                        if (__builtin_expect(regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i, 0)) {
                             DISPATCH;
                         } else {
                             DISPATCH_JUMP(inst->operands.uui.c);
@@ -749,13 +452,6 @@ object_t * frame_exec(struct frame_t * frame) {
                 break;
             default:
                 ;
-        }
-
-    L_OP_JEQ_II:
-        if (regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i) {
-            DISPATCH;
-        } else {
-            DISPATCH_JUMP(inst->operands.uui.c);
         }
 
     L_OP_JMP:
@@ -771,35 +467,161 @@ void test1() {
     /*
     r0 = 0
     r1 = 200000000
+    r2 = 1
 
     while r0 < r1
-        r0 += 1
+        r0 += r2
     */
     vm_t * vm = vm_new();
     thread_t * thread = vm->main_thread;
     code_t * code = code_new();
-    
+
+    /*
     code_append_inst(code, OP_I_CONST, (operands_t){.ui = {0, 0}});
     code_append_inst(code, OP_I_CONST, (operands_t){.ui = {1, 200000000}});
-    
-    // {
-    code_append_inst(code, OP_MOV_I_ri, (operands_t){.uu = {0, 0}});
-    code_append_inst(code, OP_MOV_I_ri, (operands_t){.uu = {1, 1}});
+    code_append_inst(code, OP_I_CONST, (operands_t){.ui = {2, 1}});
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+    code_append_inst(code, OP_JMP, (operands_t){.i = {-3}});
+    code_append_inst(code, OP_NOP, (operands_t){});
+    code_append_inst(code, OP_END, (operands_t){});
+    */
 
-    int j;
-    int j_max = 128;
+    code_append_inst(code, OP_I_CONST, (operands_t){.ui = {0, 0}});
+    code_append_inst(code, OP_I_CONST, (operands_t){.ui = {1, 200000000}});
+    code_append_inst(code, OP_I_CONST, (operands_t){.ui = {2, 1}});
+    //
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 32}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+    // code_append_inst(code, OP_JMP, (operands_t){.i = {-3}});
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 31}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
 
-    for (j = j_max; j > 0; j--) {
-        // code_append_inst(code, OP_JLT_ri0ri1, (operands_t){.i = {2 * j + 1}});
-        code_append_inst(code, OP_JLT_riri, (operands_t){.uui = {0, 1, 2 * j + 1}});
-        code_append_inst(code, OP_INC_ri, (operands_t){.u = {0}});
-    }
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 30}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
 
-    code_append_inst(code, OP_JMP, (operands_t){.i = {-2 * j_max}});
-    code_append_inst(code, OP_MOV_ri_I, (operands_t){.uu = {0, 0}});
-    code_append_inst(code, OP_MOV_ri_I, (operands_t){.uu = {1, 1}});
-    // }
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 29}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
 
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 28}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 27}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 26}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 25}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 24}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 23}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 22}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 21}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 20}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 19}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 18}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 17}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 16}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 15}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 14}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 13}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 12}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 11}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 10}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 9}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 8}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 7}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 6}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 5}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 4}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 3}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 2}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+
+    code_append_inst(code, OP_LT, (operands_t){.uuu = {3, 0, 1}});
+    code_append_inst(code, OP_JEQ, (operands_t){.uui = {3, 2, 3 * 1}});
+    code_append_inst(code, OP_ADD, (operands_t){.uuu = {0, 0, 2}});
+    //
+    code_append_inst(code, OP_JMP, (operands_t){.i = {-3 * 32}});
+    //
     code_append_inst(code, OP_NOP, (operands_t){});
     code_append_inst(code, OP_END, (operands_t){});
 
@@ -808,6 +630,8 @@ void test1() {
 
     printf("r0: %d\n", frame->regs->items[0].v.i);
     printf("r1: %d\n", frame->regs->items[1].v.i);
+    printf("r2: %d\n", frame->regs->items[2].v.i);
+    printf("r3: %d\n", frame->regs->items[3].v.i);
 
     frame_del(frame);
     code_del(code);
