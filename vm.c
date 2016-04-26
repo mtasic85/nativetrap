@@ -201,88 +201,88 @@ typedef union opcode_t {
 } opcode_t;
 
 typedef struct operands_u_t {
-    unsigned int a;
+    uint64_t a;
 } operands_u_t;
 
 typedef struct operands_ui_t {
-    unsigned int a;
-    int b;
+    uint64_t a;
+    int64_t b;
 } operands_ui_t;
 
 typedef struct operands_ui8_t {
-    unsigned int a;
+    uint64_t a;
     int8_t b;
 } operands_ui8_t;
 
 typedef struct operands_ui16_t {
-    unsigned int a;
+    uint64_t a;
     int16_t b;
 } operands_ui16_t;
 
 typedef struct operands_ui32_t {
-    unsigned int a;
+    uint64_t a;
     int32_t b;
 } operands_ui32_t;
 
 typedef struct operands_ui64_t {
-    unsigned int a;
+    uint64_t a;
     int64_t b;
 } operands_ui64_t;
 
 typedef struct operands_uu_t {
-    unsigned int a;
-    unsigned int b;
+    uint64_t a;
+    uint64_t b;
 } operands_uu_t;
 
 typedef struct operands_uu8_t {
-    unsigned int a;
+    uint64_t a;
     uint8_t b;
 } operands_uu8_t;
 
 typedef struct operands_uu16_t {
-    unsigned int a;
+    uint64_t a;
     uint16_t b;
 } operands_uu16_t;
 
 typedef struct operands_uu32_t {
-    unsigned int a;
+    uint64_t a;
     uint32_t b;
 } operands_uu32_t;
 
 typedef struct operands_uu64_t {
-    unsigned int a;
+    uint64_t a;
     uint64_t b;
 } operands_uu64_t;
 
 typedef struct operands_uf_t {
-    unsigned int a;
-    float b;
+    uint64_t a;
+    double b;
 } operands_uf_t;
 
 typedef struct operands_uf32_t {
-    unsigned int a;
+    uint64_t a;
     float b;
 } operands_uf32_t;
 
 typedef struct operands_uf64_t {
-    unsigned int a;
+    uint64_t a;
     double b;
 } operands_uf64_t;
 
 typedef struct operands_i_t {
-    int a;
+    int64_t a;
 } operands_i_t;
 
 typedef struct operands_uui_t {
-    unsigned int a;
-    unsigned int b;
-    int c;
+    uint64_t a;
+    uint64_t b;
+    int64_t c;
 } operands_uui_t;
 
 typedef struct operands_uuu_t {
-    unsigned int a;
-    unsigned int b;
-    unsigned int c;
+    uint64_t a;
+    uint64_t b;
+    uint64_t c;
 } operands_uuu_t;
 
 typedef union operands_t {
@@ -725,13 +725,13 @@ object_t * frame_exec(struct frame_t * frame) {
     MAKE_L_OP_DEC_r(f32);
     MAKE_L_OP_DEC_r(f64);
 
-    #define MAKE_L_OP_ADD_case2(TYPE1, TYPE2, TYPE3, TYPE4) \
-        case TYPE_ ## TYPE3: \
+    #define MAKE_L_OP_ADD_case2(TYPE1, TYPE2, TYPE3, TYPE4, TYPE5) \
+        case TYPE_ ## TYPE1: \
             regs->items[inst->operands.uuu.a] = (object_t){ \
-                .t = TYPE_ ## TYPE4, \
-                .v = (value_t){.i = ( \
-                    regs->items[inst->operands.uuu.b].v.TYPE1 + \
-                    regs->items[inst->operands.uuu.c].v.TYPE2 \
+                .t = TYPE_ ## TYPE5, \
+                .v = (value_t){.TYPE4 = ( \
+                    regs->items[inst->operands.uuu.b].v.TYPE2 + \
+                    regs->items[inst->operands.uuu.c].v.TYPE3 \
                 )} \
             }; \
             break;
@@ -740,16 +740,16 @@ object_t * frame_exec(struct frame_t * frame) {
         switch (regs->items[inst->operands.uuu.b].t) {
             case TYPE_I8:
                 switch (regs->items[inst->operands.uuu.c].t) {
-                    MAKE_L_OP_ADD_case2(i8, i8, I8, I8);
-                    MAKE_L_OP_ADD_case2(i8, i16, I16, I64);
-                    MAKE_L_OP_ADD_case2(i8, i32, I32, I64);
-                    MAKE_L_OP_ADD_case2(i8, i64, I64, I64);
-                    MAKE_L_OP_ADD_case2(i8, u8, U8, U8);
-                    MAKE_L_OP_ADD_case2(i8, u16, U16, I64);
-                    MAKE_L_OP_ADD_case2(i8, u32, U32, I64);
-                    MAKE_L_OP_ADD_case2(i8, u64, U64, I64);
-                    MAKE_L_OP_ADD_case2(i8, f32, F32, F64);
-                    MAKE_L_OP_ADD_case2(i8, f64, F64, F64);
+                    MAKE_L_OP_ADD_case2(I8, i8, i8, i8, I8);
+                    MAKE_L_OP_ADD_case2(I16, i8, i16, i16, I16);
+                    MAKE_L_OP_ADD_case2(I32, i8, i32, i32, I32);
+                    MAKE_L_OP_ADD_case2(I64, i8, i64, i64, I64);
+                    MAKE_L_OP_ADD_case2(U8, i8, u8, u8, U8);
+                    MAKE_L_OP_ADD_case2(U16, i8, u16, u16, I16);
+                    MAKE_L_OP_ADD_case2(U32, i8, u32, u32, I32);
+                    MAKE_L_OP_ADD_case2(U64, i8, u64, u64, I64);
+                    MAKE_L_OP_ADD_case2(F32, i8, f32, u32, F32);
+                    MAKE_L_OP_ADD_case2(F64, i8, f64, u64, F64);
                     default:;
                 }
                 break;
@@ -826,14 +826,14 @@ object_t * frame_exec(struct frame_t * frame) {
         }
 
     L_OP_JLT_ri64_ri64:
-        if (ri[inst->operands.uui.a] < ri[inst->operands.uui.b]) {
+        if (ri64[inst->operands.uui.a] < ri64[inst->operands.uui.b]) {
             DISPATCH;
         } else {
             DISPATCH_JUMP(inst->operands.uui.c);
         }
 
     L_OP_JLT_r0i64_r1i64:
-        if (ri[0] < ri[1]) {
+        if (ri64[0] < ri64[1]) {
             DISPATCH;
         } else {
             DISPATCH_JUMP(inst->operands.i.a);
@@ -886,25 +886,25 @@ void test1() {
     thread_t * thread = vm->main_thread;
     code_t * code = code_new();
     
-    code_append_inst(code, OP_I_CONST, (operands_t){.ui = {0, 0}});
-    code_append_inst(code, OP_I_CONST, (operands_t){.ui = {1, 200000000}});
+    code_append_inst(code, OP_I64_CONST, (operands_t){.ui = {0, 0}});
+    code_append_inst(code, OP_I64_CONST, (operands_t){.ui = {1, 200000000}});
     
     // {
-    code_append_inst(code, OP_MOV_I_ri, (operands_t){.uu = {0, 0}});
-    code_append_inst(code, OP_MOV_I_ri, (operands_t){.uu = {1, 1}});
+    code_append_inst(code, OP_MOV_I64_ri64, (operands_t){.uu = {0, 0}});
+    code_append_inst(code, OP_MOV_I64_ri64, (operands_t){.uu = {1, 1}});
 
     int j;
     int j_max = 128;
 
     for (j = j_max; j > 0; j--) {
-        // code_append_inst(code, OP_JLT_ri0ri1, (operands_t){.i = {2 * j + 1}});
-        code_append_inst(code, OP_JLT_riri, (operands_t){.uui = {0, 1, 2 * j + 1}});
-        code_append_inst(code, OP_INC_ri, (operands_t){.u = {0}});
+        // code_append_inst(code, OP_JLT_r0i64_r1i64, (operands_t){.i = {2 * j + 1}});
+        code_append_inst(code, OP_JLT_ri64_ri64, (operands_t){.uui = {0, 1, 2 * j + 1}});
+        code_append_inst(code, OP_INC_ri64, (operands_t){.u = {0}});
     }
 
     code_append_inst(code, OP_JMP, (operands_t){.i = {-2 * j_max}});
-    code_append_inst(code, OP_MOV_ri_I, (operands_t){.uu = {0, 0}});
-    code_append_inst(code, OP_MOV_ri_I, (operands_t){.uu = {1, 1}});
+    code_append_inst(code, OP_MOV_ri64_I64, (operands_t){.uu = {0, 0}});
+    code_append_inst(code, OP_MOV_ri64_I64, (operands_t){.uu = {1, 1}});
     // }
 
     code_append_inst(code, OP_NOP, (operands_t){});
@@ -913,8 +913,8 @@ void test1() {
     frame_t * frame = frame_new(vm, thread, NULL, code);
     object_t * r = frame_exec(frame);
 
-    printf("r0: %d\n", frame->regs->items[0].v.i);
-    printf("r1: %d\n", frame->regs->items[1].v.i);
+    printf("r0: %ld\n", frame->regs->items[0].v.i64);
+    printf("r1: %ld\n", frame->regs->items[1].v.i64);
 
     frame_del(frame);
     code_del(code);
