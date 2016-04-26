@@ -55,17 +55,14 @@
     }
 
 typedef enum type_t {
-    TYPE_I,
     TYPE_I8,
     TYPE_I16,
     TYPE_I32,
     TYPE_I64,
-    TYPE_U,
     TYPE_U8,
     TYPE_U16,
     TYPE_U32,
     TYPE_U64,
-    TYPE_F,
     TYPE_F32,
     TYPE_F64,
     TYPE_BYTES,
@@ -81,17 +78,14 @@ typedef enum type_t {
 } type_t;
 
 typedef union value_t {
-    int i;
     int8_t i8;
     int16_t i16;
     int32_t i32;
     int64_t i64;
-    unsigned int u;
     uint8_t u8;
     uint16_t u16;
     uint32_t u32;
     uint64_t u64;
-    float f;
     float f32;
     double f64;
 } value_t;
@@ -107,117 +101,96 @@ typedef enum opcode_name_t {
     OP_NOP,
     OP_END,
     
-    OP_I_CONST,
     OP_I8_CONST,
     OP_I16_CONST,
     OP_I32_CONST,
     OP_I64_CONST,
-    OP_U_CONST,
     OP_U8_CONST,
     OP_U16_CONST,
     OP_U32_CONST,
     OP_U64_CONST,
-    OP_F_CONST,
     OP_F32_CONST,
     OP_F64_CONST,
 
     OP_MOV,
-    OP_MOV_I_ri,
     OP_MOV_I8_ri8,
     OP_MOV_I16_ri16,
     OP_MOV_I32_ri32,
     OP_MOV_I64_ri64,
-    OP_MOV_U_ru,
     OP_MOV_U8_ru8,
     OP_MOV_U16_ru16,
     OP_MOV_U32_ru32,
     OP_MOV_U64_ru64,
-    OP_MOV_F_rf,
     OP_MOV_F32_rf32,
     OP_MOV_F64_rf64,
-    OP_MOV_ri_I,
     OP_MOV_ri8_I8,
     OP_MOV_ri16_I16,
     OP_MOV_ri32_I32,
     OP_MOV_ri64_I64,
-    OP_MOV_ru_U,
     OP_MOV_ru8_U8,
     OP_MOV_ru16_U16,
     OP_MOV_ru32_U32,
     OP_MOV_ru64_U64,
-    OP_MOV_rf_F,
     OP_MOV_rf32_F32,
     OP_MOV_rf64_F64,
     
     OP_INC,
-    OP_INC_I,
     OP_INC_I8,
     OP_INC_I16,
     OP_INC_I32,
     OP_INC_I64,
-    OP_INC_U,
     OP_INC_U8,
     OP_INC_U16,
     OP_INC_U32,
     OP_INC_U64,
-    OP_INC_F,
     OP_INC_F32,
     OP_INC_F64,
-    OP_INC_ri,
     OP_INC_ri8,
     OP_INC_ri16,
     OP_INC_ri32,
     OP_INC_ri64,
-    OP_INC_ru,
     OP_INC_ru8,
     OP_INC_ru16,
     OP_INC_ru32,
     OP_INC_ru64,
-    OP_INC_rf,
     OP_INC_rf32,
     OP_INC_rf64,
     
     OP_DEC,
-    OP_DEC_I,
     OP_DEC_I8,
     OP_DEC_I16,
     OP_DEC_I32,
     OP_DEC_I64,
-    OP_DEC_U,
     OP_DEC_U8,
     OP_DEC_U16,
     OP_DEC_U32,
     OP_DEC_U64,
-    OP_DEC_F,
     OP_DEC_F32,
     OP_DEC_F64,
-    OP_DEC_ri,
     OP_DEC_ri8,
     OP_DEC_ri16,
     OP_DEC_ri32,
     OP_DEC_ri64,
-    OP_DEC_ru,
     OP_DEC_ru8,
     OP_DEC_ru16,
     OP_DEC_ru32,
     OP_DEC_ru64,
-    OP_DEC_rf,
     OP_DEC_rf32,
     OP_DEC_rf64,
 
     OP_ADD,
-    OP_ADD_II,
+    OP_ADD_I64_I64,
 
     OP_LT,
-    OP_LT_II,
+    OP_LT_I64_I64,
     
     OP_JLT,
-    OP_JLT_II,
-    OP_JLT_riri,
-    OP_JLT_ri0ri1,
+    OP_JLT_I64_I64,
+    OP_JLT_ri64_ri64,
+    OP_JLT_r0i64_r1i64,
     
     OP_JEQ,
-    OP_JEQ_II,
+    OP_JEQ_I64_I64,
     
     OP_JMP
 } opcode_name_t;
@@ -464,117 +437,96 @@ object_t * frame_exec(struct frame_t * frame) {
         &&L_OP_NOP,
         &&L_OP_END,
 
-        &&L_OP_I_CONST,
         &&L_OP_I8_CONST,
         &&L_OP_I16_CONST,
         &&L_OP_I32_CONST,
         &&L_OP_I64_CONST,
-        &&L_OP_U_CONST,
         &&L_OP_U8_CONST,
         &&L_OP_U16_CONST,
         &&L_OP_U32_CONST,
         &&L_OP_U64_CONST,
-        &&L_OP_F_CONST,
         &&L_OP_F32_CONST,
         &&L_OP_F64_CONST,
 
         &&L_OP_MOV,
-        &&L_OP_MOV_I_ri,
         &&L_OP_MOV_I8_ri8,
         &&L_OP_MOV_I16_ri16,
         &&L_OP_MOV_I32_ri32,
         &&L_OP_MOV_I64_ri64,
-        &&L_OP_MOV_U_ru,
         &&L_OP_MOV_U8_ru8,
         &&L_OP_MOV_U16_ru16,
         &&L_OP_MOV_U32_ru32,
         &&L_OP_MOV_U64_ru64,
-        &&L_OP_MOV_F_rf,
         &&L_OP_MOV_F32_rf32,
         &&L_OP_MOV_F64_rf64,
-        &&L_OP_MOV_ri_I,
         &&L_OP_MOV_ri8_I8,
         &&L_OP_MOV_ri16_I16,
         &&L_OP_MOV_ri32_I32,
         &&L_OP_MOV_ri64_I64,
-        &&L_OP_MOV_ru_U,
         &&L_OP_MOV_ru8_U8,
         &&L_OP_MOV_ru16_U16,
         &&L_OP_MOV_ru32_U32,
         &&L_OP_MOV_ru64_U64,
-        &&L_OP_MOV_rf_F,
         &&L_OP_MOV_rf32_F32,
         &&L_OP_MOV_rf64_F64,
 
         &&L_OP_INC,
-        &&L_OP_INC_I,
         &&L_OP_INC_I8,
         &&L_OP_INC_I16,
         &&L_OP_INC_I32,
         &&L_OP_INC_I64,
-        &&L_OP_INC_U,
         &&L_OP_INC_U8,
         &&L_OP_INC_U16,
         &&L_OP_INC_U32,
         &&L_OP_INC_U64,
-        &&L_OP_INC_F,
         &&L_OP_INC_F32,
         &&L_OP_INC_F64,
-        &&L_OP_INC_ri,
         &&L_OP_INC_ri8,
         &&L_OP_INC_ri16,
         &&L_OP_INC_ri32,
         &&L_OP_INC_ri64,
-        &&L_OP_INC_ru,
         &&L_OP_INC_ru8,
         &&L_OP_INC_ru16,
         &&L_OP_INC_ru32,
         &&L_OP_INC_ru64,
-        &&L_OP_INC_rf,
         &&L_OP_INC_rf32,
         &&L_OP_INC_rf64,
         
         &&L_OP_DEC,
-        &&L_OP_DEC_I,
         &&L_OP_DEC_I8,
         &&L_OP_DEC_I16,
         &&L_OP_DEC_I32,
         &&L_OP_DEC_I64,
-        &&L_OP_DEC_U,
         &&L_OP_DEC_U8,
         &&L_OP_DEC_U16,
         &&L_OP_DEC_U32,
         &&L_OP_DEC_U64,
-        &&L_OP_DEC_F,
         &&L_OP_DEC_F32,
         &&L_OP_DEC_F64,
-        &&L_OP_DEC_ri,
         &&L_OP_DEC_ri8,
         &&L_OP_DEC_ri16,
         &&L_OP_DEC_ri32,
         &&L_OP_DEC_ri64,
-        &&L_OP_DEC_ru,
         &&L_OP_DEC_ru8,
         &&L_OP_DEC_ru16,
         &&L_OP_DEC_ru32,
         &&L_OP_DEC_ru64,
-        &&L_OP_DEC_rf,
         &&L_OP_DEC_rf32,
         &&L_OP_DEC_rf64,
 
         &&L_OP_ADD,
-        &&L_OP_ADD_II,
+        &&L_OP_ADD_I64_I64,
 
         &&L_OP_LT,
-        &&L_OP_LT_II,
+        &&L_OP_LT_I64_I64,
 
         &&L_OP_JLT,
-        &&L_OP_JLT_II,
-        &&L_OP_JLT_riri,
-        &&L_OP_JLT_ri0ri1,
+        &&L_OP_JLT_I64_I64,
+        &&L_OP_JLT_ri64_ri64,
+        &&L_OP_JLT_r0i64_r1i64,
 
         &&L_OP_JEQ,
-        &&L_OP_JEQ_II,
+        &&L_OP_JEQ_I64_I64,
 
         &&L_OP_JMP
     };
@@ -588,7 +540,6 @@ object_t * frame_exec(struct frame_t * frame) {
     }
 
     // NOTE: more than 3 registers doubles the time of execution!
-    // int64_t ri[3]; // FIXME: remove
     int8_t ri8[3];
     int16_t ri16[3];
     int32_t ri32[3];
@@ -598,7 +549,6 @@ object_t * frame_exec(struct frame_t * frame) {
     uint16_t ru16[3];
     uint32_t ru32[3];
     uint64_t ru64[3];
-    // double rf[3]; // FIXME: remove
     float rf32[3];
     double rf64[3];
 
@@ -619,17 +569,14 @@ object_t * frame_exec(struct frame_t * frame) {
             }; \
             DISPATCH;
 
-    MAKE_L_OP_CONST(i, I);
     MAKE_L_OP_CONST(i8, I8);
     MAKE_L_OP_CONST(i16, I16);
     MAKE_L_OP_CONST(i32, I32);
     MAKE_L_OP_CONST(i64, I64);
-    MAKE_L_OP_CONST(u, U);
     MAKE_L_OP_CONST(u8, U8);
     MAKE_L_OP_CONST(u16, U16);
     MAKE_L_OP_CONST(u32, U32);
     MAKE_L_OP_CONST(u64, U64);
-    MAKE_L_OP_CONST(f, F);
     MAKE_L_OP_CONST(f32, F32);
     MAKE_L_OP_CONST(f64, F64);
 
@@ -645,17 +592,14 @@ object_t * frame_exec(struct frame_t * frame) {
             r ## TYPE1 [inst->operands.uu.b] = regs->items[inst->operands.uu.a].v.TYPE1; \
             DISPATCH;
 
-    MAKE_L_OP_MOV_TO_REG(i, I);
     MAKE_L_OP_MOV_TO_REG(i8, I8);
     MAKE_L_OP_MOV_TO_REG(i16, I16);
     MAKE_L_OP_MOV_TO_REG(i32, I32);
     MAKE_L_OP_MOV_TO_REG(i64, I64);
-    MAKE_L_OP_MOV_TO_REG(u, U);
     MAKE_L_OP_MOV_TO_REG(u8, U8);
     MAKE_L_OP_MOV_TO_REG(u16, U16);
     MAKE_L_OP_MOV_TO_REG(u32, U32);
     MAKE_L_OP_MOV_TO_REG(u64, U64);
-    MAKE_L_OP_MOV_TO_REG(f, F);
     MAKE_L_OP_MOV_TO_REG(f32, F32);
     MAKE_L_OP_MOV_TO_REG(f64, F64);
 
@@ -664,17 +608,14 @@ object_t * frame_exec(struct frame_t * frame) {
             regs->items[inst->operands.uu.b].v.TYPE1 = r ## TYPE1[inst->operands.uu.a]; \
             DISPATCH;
 
-    MAKE_L_OP_MOV_FROM_REG(i, I);
     MAKE_L_OP_MOV_FROM_REG(i8, I8);
     MAKE_L_OP_MOV_FROM_REG(i16, I16);
     MAKE_L_OP_MOV_FROM_REG(i32, I32);
     MAKE_L_OP_MOV_FROM_REG(i64, I64);
-    MAKE_L_OP_MOV_FROM_REG(u, U);
     MAKE_L_OP_MOV_FROM_REG(u8, U8);
     MAKE_L_OP_MOV_FROM_REG(u16, U16);
     MAKE_L_OP_MOV_FROM_REG(u32, U32);
     MAKE_L_OP_MOV_FROM_REG(u64, U64);
-    MAKE_L_OP_MOV_FROM_REG(f, F);
     MAKE_L_OP_MOV_FROM_REG(f32, F32);
     MAKE_L_OP_MOV_FROM_REG(f64, F64);
 
@@ -685,17 +626,14 @@ object_t * frame_exec(struct frame_t * frame) {
 
     L_OP_INC:
         switch (regs->items[inst->operands.u.a].t) {
-            MAKE_L_OP_INC_case1(i, I);
             MAKE_L_OP_INC_case1(i8, I8);
             MAKE_L_OP_INC_case1(i16, I16);
             MAKE_L_OP_INC_case1(i32, I32);
             MAKE_L_OP_INC_case1(i64, I64);
-            MAKE_L_OP_INC_case1(u, U);
             MAKE_L_OP_INC_case1(u8, U8);
             MAKE_L_OP_INC_case1(u16, U16);
             MAKE_L_OP_INC_case1(u32, U32);
             MAKE_L_OP_INC_case1(u64, U64);
-            MAKE_L_OP_INC_case1(f, F);
             MAKE_L_OP_INC_case1(f32, F32);
             MAKE_L_OP_INC_case1(f64, F64);
             default:;
@@ -707,17 +645,14 @@ object_t * frame_exec(struct frame_t * frame) {
             regs->items[inst->operands.u.a].v.TYPE1++; \
             DISPATCH;
 
-    MAKE_L_OP_INC(i, I);
     MAKE_L_OP_INC(i8, I8);
     MAKE_L_OP_INC(i16, I16);
     MAKE_L_OP_INC(i32, I32);
     MAKE_L_OP_INC(i64, I64);
-    MAKE_L_OP_INC(u, U);
     MAKE_L_OP_INC(u8, U8);
     MAKE_L_OP_INC(u16, U16);
     MAKE_L_OP_INC(u32, U32);
     MAKE_L_OP_INC(u64, U64);
-    MAKE_L_OP_INC(f, F);
     MAKE_L_OP_INC(f32, F32);
     MAKE_L_OP_INC(f64, F64);
 
@@ -726,17 +661,14 @@ object_t * frame_exec(struct frame_t * frame) {
             r ## TYPE1[inst->operands.u.a]++; \
             DISPATCH;
 
-    MAKE_L_OP_INC_r(i);
     MAKE_L_OP_INC_r(i8);
     MAKE_L_OP_INC_r(i16);
     MAKE_L_OP_INC_r(i32);
     MAKE_L_OP_INC_r(i64);
-    MAKE_L_OP_INC_r(u);
     MAKE_L_OP_INC_r(u8);
     MAKE_L_OP_INC_r(u16);
     MAKE_L_OP_INC_r(u32);
     MAKE_L_OP_INC_r(u64);
-    MAKE_L_OP_INC_r(f);
     MAKE_L_OP_INC_r(f32);
     MAKE_L_OP_INC_r(f64);
 
@@ -747,17 +679,14 @@ object_t * frame_exec(struct frame_t * frame) {
 
     L_OP_DEC:
         switch (regs->items[inst->operands.u.a].t) {
-            MAKE_L_OP_DEC_case1(i, I);
             MAKE_L_OP_DEC_case1(i8, I8);
             MAKE_L_OP_DEC_case1(i16, I16);
             MAKE_L_OP_DEC_case1(i32, I32);
             MAKE_L_OP_DEC_case1(i64, I64);
-            MAKE_L_OP_DEC_case1(u, U);
             MAKE_L_OP_DEC_case1(u8, U8);
             MAKE_L_OP_DEC_case1(u16, U16);
             MAKE_L_OP_DEC_case1(u32, U32);
             MAKE_L_OP_DEC_case1(u64, U64);
-            MAKE_L_OP_DEC_case1(f, F);
             MAKE_L_OP_DEC_case1(f32, F32);
             MAKE_L_OP_DEC_case1(f64, F64);
             default:;
@@ -769,17 +698,14 @@ object_t * frame_exec(struct frame_t * frame) {
             regs->items[inst->operands.u.a].v.TYPE1--; \
             DISPATCH;
 
-    MAKE_L_OP_DEC(i, I);
     MAKE_L_OP_DEC(i8, I8);
     MAKE_L_OP_DEC(i16, I16);
     MAKE_L_OP_DEC(i32, I32);
     MAKE_L_OP_DEC(i64, I64);
-    MAKE_L_OP_DEC(u, U);
     MAKE_L_OP_DEC(u8, U8);
     MAKE_L_OP_DEC(u16, U16);
     MAKE_L_OP_DEC(u32, U32);
     MAKE_L_OP_DEC(u64, U64);
-    MAKE_L_OP_DEC(f, F);
     MAKE_L_OP_DEC(f32, F32);
     MAKE_L_OP_DEC(f64, F64);
 
@@ -788,17 +714,14 @@ object_t * frame_exec(struct frame_t * frame) {
             r ## TYPE1[inst->operands.u.a]--; \
             DISPATCH;
 
-    MAKE_L_OP_DEC_r(i);
     MAKE_L_OP_DEC_r(i8);
     MAKE_L_OP_DEC_r(i16);
     MAKE_L_OP_DEC_r(i32);
     MAKE_L_OP_DEC_r(i64);
-    MAKE_L_OP_DEC_r(u);
     MAKE_L_OP_DEC_r(u8);
     MAKE_L_OP_DEC_r(u16);
     MAKE_L_OP_DEC_r(u32);
     MAKE_L_OP_DEC_r(u64);
-    MAKE_L_OP_DEC_r(f);
     MAKE_L_OP_DEC_r(f32);
     MAKE_L_OP_DEC_r(f64);
 
@@ -815,66 +738,18 @@ object_t * frame_exec(struct frame_t * frame) {
 
     L_OP_ADD:
         switch (regs->items[inst->operands.uuu.b].t) {
-            case TYPE_I:
+            case TYPE_I8:
                 switch (regs->items[inst->operands.uuu.c].t) {
-                    /*case TYPE_I:
-                        regs->items[inst->operands.uuu.a] = (object_t){
-                            .t = TYPE_I,
-                            .v = (value_t){.i = (
-                                regs->items[inst->operands.uuu.b].v.i +
-                                regs->items[inst->operands.uuu.c].v.i
-                            )}
-                        };
-                        break;*/
-                    /*case TYPE_I8:
-                        regs->items[inst->operands.uuu.a] = (object_t){
-                            .t = TYPE_I,
-                            .v = (value_t){.i = (
-                                regs->items[inst->operands.uuu.b].v.i +
-                                regs->items[inst->operands.uuu.c].v.i8
-                            )}
-                        };
-                        break;
-                    case TYPE_I16:
-                        regs->items[inst->operands.uuu.a] = (object_t){
-                            .t = TYPE_I,
-                            .v = (value_t){.i = (
-                                regs->items[inst->operands.uuu.b].v.i +
-                                regs->items[inst->operands.uuu.c].v.i16
-                            )}
-                        };
-                        break;
-                    case TYPE_I32:
-                        regs->items[inst->operands.uuu.a] = (object_t){
-                            .t = TYPE_I,
-                            .v = (value_t){.i = (
-                                regs->items[inst->operands.uuu.b].v.i +
-                                regs->items[inst->operands.uuu.c].v.i32
-                            )}
-                        };
-                        break;
-                    case TYPE_I64:
-                        regs->items[inst->operands.uuu.a] = (object_t){
-                            .t = TYPE_I,
-                            .v = (value_t){.i = (
-                                regs->items[inst->operands.uuu.b].v.i +
-                                regs->items[inst->operands.uuu.c].v.i64
-                            )}
-                        };
-                        break;*/
-                    MAKE_L_OP_ADD_case2(i, i, I, I);
-                    MAKE_L_OP_ADD_case2(i, i8, I8, I);
-                    MAKE_L_OP_ADD_case2(i, i16, I16, I);
-                    MAKE_L_OP_ADD_case2(i, i32, I32, I);
-                    MAKE_L_OP_ADD_case2(i, i64, I64, I);
-                    MAKE_L_OP_ADD_case2(i, u, U, I);
-                    MAKE_L_OP_ADD_case2(i, u8, U8, I);
-                    MAKE_L_OP_ADD_case2(i, u16, U16, I);
-                    MAKE_L_OP_ADD_case2(i, u32, U32, I);
-                    MAKE_L_OP_ADD_case2(i, u64, U64, I);
-                    MAKE_L_OP_ADD_case2(i, f, F, F);
-                    MAKE_L_OP_ADD_case2(i, f32, F32, F);
-                    MAKE_L_OP_ADD_case2(i, f64, F64, F);
+                    MAKE_L_OP_ADD_case2(i8, i8, I8, I8);
+                    MAKE_L_OP_ADD_case2(i8, i16, I16, I64);
+                    MAKE_L_OP_ADD_case2(i8, i32, I32, I64);
+                    MAKE_L_OP_ADD_case2(i8, i64, I64, I64);
+                    MAKE_L_OP_ADD_case2(i8, u8, U8, U8);
+                    MAKE_L_OP_ADD_case2(i8, u16, U16, I64);
+                    MAKE_L_OP_ADD_case2(i8, u32, U32, I64);
+                    MAKE_L_OP_ADD_case2(i8, u64, U64, I64);
+                    MAKE_L_OP_ADD_case2(i8, f32, F32, F64);
+                    MAKE_L_OP_ADD_case2(i8, f64, F64, F64);
                     default:;
                 }
                 break;
@@ -882,26 +757,26 @@ object_t * frame_exec(struct frame_t * frame) {
         }
         DISPATCH;
 
-    L_OP_ADD_II:
+    L_OP_ADD_I64_I64:
         regs->items[inst->operands.uuu.a] = (object_t){
-            .t = TYPE_I,
-            .v = (value_t){.i = (
-                regs->items[inst->operands.uuu.b].v.i +
-                regs->items[inst->operands.uuu.c].v.i
+            .t = TYPE_I64,
+            .v = (value_t){.i64 = (
+                regs->items[inst->operands.uuu.b].v.i64 +
+                regs->items[inst->operands.uuu.c].v.i64
             )}
         };
         DISPATCH;
 
     L_OP_LT:
         switch (regs->items[inst->operands.uuu.b].t) {
-            case TYPE_I:
+            case TYPE_I64:
                 switch (regs->items[inst->operands.uuu.c].t) {
-                    case TYPE_I:
+                    case TYPE_I64:
                         regs->items[inst->operands.uuu.a] = (object_t){
-                            .t = TYPE_I,
-                            .v = (value_t){.i = (
-                                regs->items[inst->operands.uuu.b].v.i <
-                                regs->items[inst->operands.uuu.c].v.i
+                            .t = TYPE_I64,
+                            .v = (value_t){.i64 = (
+                                regs->items[inst->operands.uuu.b].v.i64 <
+                                regs->items[inst->operands.uuu.c].v.i64
                             )}
                         };
                         break;
@@ -914,22 +789,22 @@ object_t * frame_exec(struct frame_t * frame) {
         }
         DISPATCH;
 
-    L_OP_LT_II:
+    L_OP_LT_I64_I64:
         regs->items[inst->operands.uuu.a] = (object_t){
-            .t = TYPE_I,
-            .v = (value_t){.i = (
-                regs->items[inst->operands.uuu.b].v.i <
-                regs->items[inst->operands.uuu.c].v.i
+            .t = TYPE_I64,
+            .v = (value_t){.i64 = (
+                regs->items[inst->operands.uuu.b].v.i64 <
+                regs->items[inst->operands.uuu.c].v.i64
             )}
         };
         DISPATCH;
 
     L_OP_JLT:
         switch (regs->items[inst->operands.uui.a].t) {
-            case TYPE_I:
+            case TYPE_I64:
                 switch (regs->items[inst->operands.uui.b].t) {
-                    case TYPE_I:
-                        if (regs->items[inst->operands.uui.a].v.i < regs->items[inst->operands.uui.b].v.i) {
+                    case TYPE_I64:
+                        if (regs->items[inst->operands.uui.a].v.i64 < regs->items[inst->operands.uui.b].v.i64) {
                             DISPATCH;
                         } else {
                             DISPATCH_JUMP(inst->operands.uui.c);
@@ -943,21 +818,21 @@ object_t * frame_exec(struct frame_t * frame) {
                 ;
         }
 
-    L_OP_JLT_II:
-        if (regs->items[inst->operands.uui.a].v.i < regs->items[inst->operands.uui.b].v.i) {
+    L_OP_JLT_I64_I64:
+        if (regs->items[inst->operands.uui.a].v.i64 < regs->items[inst->operands.uui.b].v.i64) {
             DISPATCH;
         } else {
             DISPATCH_JUMP(inst->operands.uui.c);
         }
 
-    L_OP_JLT_riri:
+    L_OP_JLT_ri64_ri64:
         if (ri[inst->operands.uui.a] < ri[inst->operands.uui.b]) {
             DISPATCH;
         } else {
             DISPATCH_JUMP(inst->operands.uui.c);
         }
 
-    L_OP_JLT_ri0ri1:
+    L_OP_JLT_r0i64_r1i64:
         if (ri[0] < ri[1]) {
             DISPATCH;
         } else {
@@ -966,10 +841,10 @@ object_t * frame_exec(struct frame_t * frame) {
 
     L_OP_JEQ:
         switch (regs->items[inst->operands.uui.a].t) {
-            case TYPE_I:
+            case TYPE_I64:
                 switch (regs->items[inst->operands.uui.b].t) {
-                    case TYPE_I:
-                        if (regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i) {
+                    case TYPE_I64:
+                        if (regs->items[inst->operands.uui.a].v.i64 == regs->items[inst->operands.uui.b].v.i64) {
                             DISPATCH;
                         } else {
                             DISPATCH_JUMP(inst->operands.uui.c);
@@ -983,8 +858,8 @@ object_t * frame_exec(struct frame_t * frame) {
                 ;
         }
 
-    L_OP_JEQ_II:
-        if (regs->items[inst->operands.uui.a].v.i == regs->items[inst->operands.uui.b].v.i) {
+    L_OP_JEQ_I64_I64:
+        if (regs->items[inst->operands.uui.a].v.i64 == regs->items[inst->operands.uui.b].v.i64) {
             DISPATCH;
         } else {
             DISPATCH_JUMP(inst->operands.uui.c);
