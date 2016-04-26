@@ -588,7 +588,7 @@ object_t * frame_exec(struct frame_t * frame) {
     }
 
     // NOTE: more than 3 registers doubles the time of execution!
-    int64_t ri[3]; // FIXME: remove
+    // int64_t ri[3]; // FIXME: remove
     int8_t ri8[3];
     int16_t ri16[3];
     int32_t ri32[3];
@@ -598,7 +598,7 @@ object_t * frame_exec(struct frame_t * frame) {
     uint16_t ru16[3];
     uint32_t ru32[3];
     uint64_t ru64[3];
-    double rf[3]; // FIXME: remove
+    // double rf[3]; // FIXME: remove
     float rf32[3];
     double rf64[3];
 
