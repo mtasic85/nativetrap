@@ -187,7 +187,6 @@ typedef enum opcode_name_t {
     OP_JLT,
     OP_JLT_I64_I64,
     OP_JLT_ri64_ri64,
-    OP_JLT_r0i64_r1i64,
     
     OP_JEQ,
     OP_JEQ_I64_I64,
@@ -523,7 +522,6 @@ object_t * frame_exec(struct frame_t * frame) {
         &&L_OP_JLT,
         &&L_OP_JLT_I64_I64,
         &&L_OP_JLT_ri64_ri64,
-        &&L_OP_JLT_r0i64_r1i64,
 
         &&L_OP_JEQ,
         &&L_OP_JEQ_I64_I64,
@@ -736,25 +734,78 @@ object_t * frame_exec(struct frame_t * frame) {
             }; \
             break;
 
+    #define _MAKE_L_BINOP_0(...) \
+        __VA_ARGS__;
+
+    #define MAKE_L_BINOP(OP, ...)
+        L_BINOP_ ## OP:
+            switch (regs->items[inst->operands.uuu.b].t) {
+                _MAKE_L_BINOP_0(I)
+                default:;
+            }
+
+    #define MAKE_L_LOGBINOP(OP, ...) ;
+
+    MAKE_L_BINOP(ADD);
+    MAKE_L_BINOP(SUB);
+    MAKE_L_BINOP(MUL);
+    MAKE_L_BINOP(DIV);
+    MAKE_L_BINOP(MOD);
+    MAKE_L_BINOP(POW);
+    MAKE_L_BINOP(LSHIFT);
+    MAKE_L_BINOP(RSHIFT);
+    MAKE_L_LOGBINOP(LT);
+    MAKE_L_LOGBINOP(LE);
+    MAKE_L_LOGBINOP(GT);
+    MAKE_L_LOGBINOP(GE);
+    MAKE_L_LOGBINOP(EQ);
+    MAKE_L_LOGBINOP(NE);
+
     L_OP_ADD:
-        switch (regs->items[inst->operands.uuu.b].t) {
+        /*switch (regs->items[inst->operands.uuu.b].t) {
             case TYPE_I8:
                 switch (regs->items[inst->operands.uuu.c].t) {
                     MAKE_L_OP_ADD_case2(I8, i8, i8, i8, I8);
                     MAKE_L_OP_ADD_case2(I16, i8, i16, i16, I16);
                     MAKE_L_OP_ADD_case2(I32, i8, i32, i32, I32);
                     MAKE_L_OP_ADD_case2(I64, i8, i64, i64, I64);
-                    MAKE_L_OP_ADD_case2(U8, i8, u8, u8, U8);
-                    MAKE_L_OP_ADD_case2(U16, i8, u16, u16, I16);
-                    MAKE_L_OP_ADD_case2(U32, i8, u32, u32, I32);
-                    MAKE_L_OP_ADD_case2(U64, i8, u64, u64, I64);
-                    MAKE_L_OP_ADD_case2(F32, i8, f32, u32, F32);
-                    MAKE_L_OP_ADD_case2(F64, i8, f64, u64, F64);
+                    MAKE_L_OP_ADD_case2(U8, i8, u8, i8, I8);
+                    MAKE_L_OP_ADD_case2(U16, i8, u16, i16, I16);
+                    MAKE_L_OP_ADD_case2(U32, i8, u32, i32, I32);
+                    MAKE_L_OP_ADD_case2(U64, i8, u64, i64, I64);
+                    MAKE_L_OP_ADD_case2(F32, i8, f32, f32, F32);
+                    MAKE_L_OP_ADD_case2(F64, i8, f64, f64, F64);
+                    default:;
+                }
+                break;
+            case TYPE_I16:
+                switch (regs->items[inst->operands.uuu.c].t) {
+                    MAKE_L_OP_ADD_case2(I8, i16, i8, i16, I16);
+                    MAKE_L_OP_ADD_case2(I16, i16, i16, i16, I16);
+                    MAKE_L_OP_ADD_case2(I32, i16, i32, i32, I32);
+                    MAKE_L_OP_ADD_case2(I64, i16, i64, i64, I64);
+                    MAKE_L_OP_ADD_case2(U8, i16, u8, u8, U8);
+                    MAKE_L_OP_ADD_case2(U16, i16, u16, u16, I16);
+                    MAKE_L_OP_ADD_case2(U32, i16, u32, u32, I32);
+                    MAKE_L_OP_ADD_case2(U64, i16, u64, u64, I64);
+                    MAKE_L_OP_ADD_case2(F32, i16, f32, f32, F32);
+                    MAKE_L_OP_ADD_case2(F64, i16, f64, f64, F64);
                     default:;
                 }
                 break;
             default:;
-        }
+        }*/
+
+        /*switch (regs->items[inst->operands.uuu.b].t) {
+            MAKE_L_OP_ADD_case(
+                I8,
+                    I8, I8, i8, i8, i8,
+                    I16, I16, i8, i16, i16,
+            );
+            default:;
+        }*/
+
+
         DISPATCH;
 
     L_OP_ADD_I64_I64:
@@ -832,13 +883,6 @@ object_t * frame_exec(struct frame_t * frame) {
             DISPATCH_JUMP(inst->operands.uui.c);
         }
 
-    L_OP_JLT_r0i64_r1i64:
-        if (ri64[0] < ri64[1]) {
-            DISPATCH;
-        } else {
-            DISPATCH_JUMP(inst->operands.i.a);
-        }
-
     L_OP_JEQ:
         switch (regs->items[inst->operands.uui.a].t) {
             case TYPE_I64:
@@ -897,7 +941,6 @@ void test1() {
     int j_max = 128;
 
     for (j = j_max; j > 0; j--) {
-        // code_append_inst(code, OP_JLT_r0i64_r1i64, (operands_t){.i = {2 * j + 1}});
         code_append_inst(code, OP_JLT_ri64_ri64, (operands_t){.uui = {0, 1, 2 * j + 1}});
         code_append_inst(code, OP_INC_ri64, (operands_t){.u = {0}});
     }
