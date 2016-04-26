@@ -207,14 +207,18 @@ typedef enum opcode_name_t {
 
     OP_ADD,
     OP_ADD_II,
+
     OP_LT,
     OP_LT_II,
+    
     OP_JLT,
     OP_JLT_II,
     OP_JLT_riri,
     OP_JLT_ri0ri1,
+    
     OP_JEQ,
     OP_JEQ_II,
+    
     OP_JMP
 } opcode_name_t;
 
@@ -560,14 +564,18 @@ object_t * frame_exec(struct frame_t * frame) {
 
         &&L_OP_ADD,
         &&L_OP_ADD_II,
+
         &&L_OP_LT,
         &&L_OP_LT_II,
+
         &&L_OP_JLT,
         &&L_OP_JLT_II,
         &&L_OP_JLT_riri,
         &&L_OP_JLT_ri0ri1,
+
         &&L_OP_JEQ,
         &&L_OP_JEQ_II,
+
         &&L_OP_JMP
     };
 
@@ -580,7 +588,7 @@ object_t * frame_exec(struct frame_t * frame) {
     }
 
     // NOTE: more than 3 registers doubles the time of execution!
-    int ri[3];
+    int64_t ri[3]; // FIXME: remove
     int8_t ri8[3];
     int16_t ri16[3];
     int32_t ri32[3];
@@ -590,7 +598,7 @@ object_t * frame_exec(struct frame_t * frame) {
     uint16_t ru16[3];
     uint32_t ru32[3];
     uint64_t ru64[3];
-    float rf[3];
+    double rf[3]; // FIXME: remove
     float rf32[3];
     double rf64[3];
 
@@ -670,49 +678,27 @@ object_t * frame_exec(struct frame_t * frame) {
     MAKE_L_OP_MOV_FROM_REG(f32, F32);
     MAKE_L_OP_MOV_FROM_REG(f64, F64);
 
+    #define MAKE_L_OP_INC_case1(TYPE1, TYPE2) \
+        case TYPE_ ## TYPE2: \
+            regs->items[inst->operands.u.a].v.TYPE1++; \
+            break;
+
     L_OP_INC:
         switch (regs->items[inst->operands.u.a].t) {
-            case TYPE_I:
-                regs->items[inst->operands.u.a].v.i++;
-                break;
-            case TYPE_I8:
-                regs->items[inst->operands.u.a].v.i8++;
-                break;
-            case TYPE_I16:
-                regs->items[inst->operands.u.a].v.i16++;
-                break;
-            case TYPE_I32:
-                regs->items[inst->operands.u.a].v.i32++;
-                break;
-            case TYPE_I64:
-                regs->items[inst->operands.u.a].v.i64++;
-                break;
-            case TYPE_U:
-                regs->items[inst->operands.u.a].v.u++;
-                break;
-            case TYPE_U8:
-                regs->items[inst->operands.u.a].v.u8++;
-                break;
-            case TYPE_U16:
-                regs->items[inst->operands.u.a].v.u16++;
-                break;
-            case TYPE_U32:
-                regs->items[inst->operands.u.a].v.u32++;
-                break;
-            case TYPE_U64:
-                regs->items[inst->operands.u.a].v.u64++;
-                break;
-            case TYPE_F:
-                regs->items[inst->operands.u.a].v.f++;
-                break;
-            case TYPE_F32:
-                regs->items[inst->operands.u.a].v.f32++;
-                break;
-            case TYPE_F64:
-                regs->items[inst->operands.u.a].v.f64++;
-                break;
-            default:
-                ;
+            MAKE_L_OP_INC_case1(i, I);
+            MAKE_L_OP_INC_case1(i8, I8);
+            MAKE_L_OP_INC_case1(i16, I16);
+            MAKE_L_OP_INC_case1(i32, I32);
+            MAKE_L_OP_INC_case1(i64, I64);
+            MAKE_L_OP_INC_case1(u, U);
+            MAKE_L_OP_INC_case1(u8, U8);
+            MAKE_L_OP_INC_case1(u16, U16);
+            MAKE_L_OP_INC_case1(u32, U32);
+            MAKE_L_OP_INC_case1(u64, U64);
+            MAKE_L_OP_INC_case1(f, F);
+            MAKE_L_OP_INC_case1(f32, F32);
+            MAKE_L_OP_INC_case1(f64, F64);
+            default:;
         }
         DISPATCH;
 
@@ -754,49 +740,27 @@ object_t * frame_exec(struct frame_t * frame) {
     MAKE_L_OP_INC_r(f32);
     MAKE_L_OP_INC_r(f64);
 
+    #define MAKE_L_OP_DEC_case1(TYPE1, TYPE2) \
+        case TYPE_ ## TYPE2: \
+            regs->items[inst->operands.u.a].v.TYPE1--; \
+            break;
+
     L_OP_DEC:
         switch (regs->items[inst->operands.u.a].t) {
-            case TYPE_I:
-                regs->items[inst->operands.u.a].v.i--;
-                break;
-            case TYPE_I8:
-                regs->items[inst->operands.u.a].v.i8--;
-                break;
-            case TYPE_I16:
-                regs->items[inst->operands.u.a].v.i16--;
-                break;
-            case TYPE_I32:
-                regs->items[inst->operands.u.a].v.i32--;
-                break;
-            case TYPE_I64:
-                regs->items[inst->operands.u.a].v.i64--;
-                break;
-            case TYPE_U:
-                regs->items[inst->operands.u.a].v.u--;
-                break;
-            case TYPE_U8:
-                regs->items[inst->operands.u.a].v.u8--;
-                break;
-            case TYPE_U16:
-                regs->items[inst->operands.u.a].v.u16--;
-                break;
-            case TYPE_U32:
-                regs->items[inst->operands.u.a].v.u32--;
-                break;
-            case TYPE_U64:
-                regs->items[inst->operands.u.a].v.u64--;
-                break;
-            case TYPE_F:
-                regs->items[inst->operands.u.a].v.f--;
-                break;
-            case TYPE_F32:
-                regs->items[inst->operands.u.a].v.f32--;
-                break;
-            case TYPE_F64:
-                regs->items[inst->operands.u.a].v.f64--;
-                break;
-            default:
-                ;
+            MAKE_L_OP_DEC_case1(i, I);
+            MAKE_L_OP_DEC_case1(i8, I8);
+            MAKE_L_OP_DEC_case1(i16, I16);
+            MAKE_L_OP_DEC_case1(i32, I32);
+            MAKE_L_OP_DEC_case1(i64, I64);
+            MAKE_L_OP_DEC_case1(u, U);
+            MAKE_L_OP_DEC_case1(u8, U8);
+            MAKE_L_OP_DEC_case1(u16, U16);
+            MAKE_L_OP_DEC_case1(u32, U32);
+            MAKE_L_OP_DEC_case1(u64, U64);
+            MAKE_L_OP_DEC_case1(f, F);
+            MAKE_L_OP_DEC_case1(f32, F32);
+            MAKE_L_OP_DEC_case1(f64, F64);
+            default:;
         }
         DISPATCH;
 
@@ -838,11 +802,22 @@ object_t * frame_exec(struct frame_t * frame) {
     MAKE_L_OP_DEC_r(f32);
     MAKE_L_OP_DEC_r(f64);
 
+    #define MAKE_L_OP_ADD_case2(TYPE1, TYPE2, TYPE3, TYPE4) \
+        case TYPE_ ## TYPE3: \
+            regs->items[inst->operands.uuu.a] = (object_t){ \
+                .t = TYPE_ ## TYPE4, \
+                .v = (value_t){.i = ( \
+                    regs->items[inst->operands.uuu.b].v.TYPE1 + \
+                    regs->items[inst->operands.uuu.c].v.TYPE2 \
+                )} \
+            }; \
+            break;
+
     L_OP_ADD:
         switch (regs->items[inst->operands.uuu.b].t) {
             case TYPE_I:
                 switch (regs->items[inst->operands.uuu.c].t) {
-                    case TYPE_I:
+                    /*case TYPE_I:
                         regs->items[inst->operands.uuu.a] = (object_t){
                             .t = TYPE_I,
                             .v = (value_t){.i = (
@@ -850,13 +825,60 @@ object_t * frame_exec(struct frame_t * frame) {
                                 regs->items[inst->operands.uuu.c].v.i
                             )}
                         };
+                        break;*/
+                    /*case TYPE_I8:
+                        regs->items[inst->operands.uuu.a] = (object_t){
+                            .t = TYPE_I,
+                            .v = (value_t){.i = (
+                                regs->items[inst->operands.uuu.b].v.i +
+                                regs->items[inst->operands.uuu.c].v.i8
+                            )}
+                        };
                         break;
-                    default:
-                        ;
+                    case TYPE_I16:
+                        regs->items[inst->operands.uuu.a] = (object_t){
+                            .t = TYPE_I,
+                            .v = (value_t){.i = (
+                                regs->items[inst->operands.uuu.b].v.i +
+                                regs->items[inst->operands.uuu.c].v.i16
+                            )}
+                        };
+                        break;
+                    case TYPE_I32:
+                        regs->items[inst->operands.uuu.a] = (object_t){
+                            .t = TYPE_I,
+                            .v = (value_t){.i = (
+                                regs->items[inst->operands.uuu.b].v.i +
+                                regs->items[inst->operands.uuu.c].v.i32
+                            )}
+                        };
+                        break;
+                    case TYPE_I64:
+                        regs->items[inst->operands.uuu.a] = (object_t){
+                            .t = TYPE_I,
+                            .v = (value_t){.i = (
+                                regs->items[inst->operands.uuu.b].v.i +
+                                regs->items[inst->operands.uuu.c].v.i64
+                            )}
+                        };
+                        break;*/
+                    MAKE_L_OP_ADD_case2(i, i, I, I);
+                    MAKE_L_OP_ADD_case2(i, i8, I8, I);
+                    MAKE_L_OP_ADD_case2(i, i16, I16, I);
+                    MAKE_L_OP_ADD_case2(i, i32, I32, I);
+                    MAKE_L_OP_ADD_case2(i, i64, I64, I);
+                    MAKE_L_OP_ADD_case2(i, u, U, I);
+                    MAKE_L_OP_ADD_case2(i, u8, U8, I);
+                    MAKE_L_OP_ADD_case2(i, u16, U16, I);
+                    MAKE_L_OP_ADD_case2(i, u32, U32, I);
+                    MAKE_L_OP_ADD_case2(i, u64, U64, I);
+                    MAKE_L_OP_ADD_case2(i, f, F, F);
+                    MAKE_L_OP_ADD_case2(i, f32, F32, F);
+                    MAKE_L_OP_ADD_case2(i, f64, F64, F);
+                    default:;
                 }
                 break;
-            default:
-                ;
+            default:;
         }
         DISPATCH;
 
