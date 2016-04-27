@@ -723,43 +723,43 @@ object_t * frame_exec(struct frame_t * frame) {
     MAKE_L_OP_DEC_r(f32);
     MAKE_L_OP_DEC_r(f64);
 
-    #define MAKE_L_OP_ADD_case2(TYPE1, TYPE2, TYPE3, TYPE4, TYPE5) \
-        case TYPE_ ## TYPE1: \
-            regs->items[inst->operands.uuu.a] = (object_t){ \
-                .t = TYPE_ ## TYPE5, \
-                .v = (value_t){.TYPE4 = ( \
-                    regs->items[inst->operands.uuu.b].v.TYPE2 + \
-                    regs->items[inst->operands.uuu.c].v.TYPE3 \
-                )} \
-            }; \
-            break;
+    // #define MAKE_L_OP_ADD_case2(TYPE1, TYPE2, TYPE3, TYPE4, TYPE5) \
+    //     case TYPE_ ## TYPE1: \
+    //         regs->items[inst->operands.uuu.a] = (object_t){ \
+    //             .t = TYPE_ ## TYPE5, \
+    //             .v = (value_t){.TYPE4 = ( \
+    //                 regs->items[inst->operands.uuu.b].v.TYPE2 + \
+    //                 regs->items[inst->operands.uuu.c].v.TYPE3 \
+    //             )} \
+    //         }; \
+    //         break;
 
-    #define _MAKE_L_BINOP_0(...) \
-        __VA_ARGS__;
+    // #define _MAKE_L_BINOP_0(...) \
+    //     __VA_ARGS__;
 
-    #define MAKE_L_BINOP(OP, ...)
-        L_BINOP_ ## OP:
-            switch (regs->items[inst->operands.uuu.b].t) {
-                _MAKE_L_BINOP_0(I)
-                default:;
-            }
+    // #define MAKE_L_BINOP(OP, ...)
+    //     L_BINOP_ ## OP:
+    //         switch (regs->items[inst->operands.uuu.b].t) {
+    //             _MAKE_L_BINOP_0(I)
+    //             default:;
+    //         }
 
-    #define MAKE_L_LOGBINOP(OP, ...) ;
+    // #define MAKE_L_LOGBINOP(OP, ...) ;
 
-    MAKE_L_BINOP(ADD);
-    MAKE_L_BINOP(SUB);
-    MAKE_L_BINOP(MUL);
-    MAKE_L_BINOP(DIV);
-    MAKE_L_BINOP(MOD);
-    MAKE_L_BINOP(POW);
-    MAKE_L_BINOP(LSHIFT);
-    MAKE_L_BINOP(RSHIFT);
-    MAKE_L_LOGBINOP(LT);
-    MAKE_L_LOGBINOP(LE);
-    MAKE_L_LOGBINOP(GT);
-    MAKE_L_LOGBINOP(GE);
-    MAKE_L_LOGBINOP(EQ);
-    MAKE_L_LOGBINOP(NE);
+    // MAKE_L_BINOP(ADD);
+    // MAKE_L_BINOP(SUB);
+    // MAKE_L_BINOP(MUL);
+    // MAKE_L_BINOP(DIV);
+    // MAKE_L_BINOP(MOD);
+    // MAKE_L_BINOP(POW);
+    // MAKE_L_BINOP(LSHIFT);
+    // MAKE_L_BINOP(RSHIFT);
+    // MAKE_L_LOGBINOP(LT);
+    // MAKE_L_LOGBINOP(LE);
+    // MAKE_L_LOGBINOP(GT);
+    // MAKE_L_LOGBINOP(GE);
+    // MAKE_L_LOGBINOP(EQ);
+    // MAKE_L_LOGBINOP(NE);
 
     L_OP_ADD:
         /*switch (regs->items[inst->operands.uuu.b].t) {
