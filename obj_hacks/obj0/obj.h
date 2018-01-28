@@ -12,6 +12,7 @@ typedef enum o_type_t o_type_t;
 typedef struct o_obj_t o_obj_t;
 typedef enum o_n_func_args_t o_n_func_args_t;
 typedef struct o_func_args_t o_func_args_t;
+typedef struct o_func_args_t o_fa_t;
 
 #include "bool.h"
 
@@ -43,7 +44,7 @@ struct o_obj_t {
     };
 };
 
-#define O_FARGS_T (o_func_args_t)
+#define O_FA_T (o_func_args_t)
 
 enum o_n_func_args_t {
     O_0_ARG,
@@ -62,72 +63,21 @@ enum o_n_func_args_t {
 
 struct o_func_args_t {
     o_n_func_args_t n;
-    
-    union {
-        struct o_1_arg_t {
-            o_obj_t * a;
-        } o_1_arg;
-
-        struct o_2_arg_t {
-            o_obj_t * a;
-            o_obj_t * b;
-        } o_2_arg;
-
-        struct o_3_arg_t {
-            o_obj_t * a;
-            o_obj_t * b;
-            o_obj_t * c;
-        } o_3_arg;
-
-        struct o_args_t {
-            o_obj_t * args;
-        } o_args;
-
-        struct o_kwargs_t {
-            o_obj_t * kwargs;
-        } o_kwargs;
-
-        struct o_args_kwargs_t {
-            o_obj_t * args;
-            o_obj_t * kwargs;
-        } o_args_kwargs;
-
-        struct o_self_t {
-            o_obj_t * self;
-        } o_self;
-
-        struct o_self_other_t {
-            o_obj_t * self;
-            o_obj_t * other;
-        } o_self_other;
-
-        struct o_self_args_t {
-            o_obj_t * self;
-            o_obj_t * args;
-        } o_self_args;
-
-        struct o_self_kwargs_t {
-            o_obj_t * self;
-            o_obj_t * kwargs;
-        } o_self_kwargs;
-
-        struct o_self_args_kwargs_t {
-            o_obj_t * self;
-            o_obj_t * args;
-            o_obj_t * kwargs;
-        } o_self_args_kwargs;
-    };
+    o_obj_t * a;
+    o_obj_t * b;
+    o_obj_t * c;
+    o_obj_t * d;
 };
 
 #define O_OBJ_REF(ctx, o) (o->rc++)
 
 #define O_OBJ_UNREF(ctx, o) \
     (o->rc == 1 ? \
-        (unsigned int)o_obj_del(ctx, O_FARGS_T {O_SELF, .o_self = {o}}) : \
+        (unsigned int)o_obj_del(ctx, O_FA_T {O_SELF, o}) : \
         o->rc-- \
     )
 
-o_obj_t * o_obj_del(o_ctx_t * ctx, o_func_args_t fa);
-o_obj_t * o_obj_and(o_ctx_t * ctx, o_func_args_t fa);
+o_obj_t * o_obj_del(o_ctx_t * ctx, o_fa_t fa);
+o_obj_t * o_obj_and(o_ctx_t * ctx, o_fa_t fa);
 
 #endif

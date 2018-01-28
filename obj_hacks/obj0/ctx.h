@@ -8,11 +8,13 @@
 #include <stdbool.h>
 #include <pthread.h>
 
-typedef struct o_ctx_t {
-    void * dummy;
-} o_ctx_t;
+typedef struct o_ctx_t o_ctx_t;
 
-o_ctx_t * o_ctx_new(void);
+struct o_ctx_t {
+    o_ctx_t * parent_ctx;
+};
+
+o_ctx_t * o_ctx_new(o_ctx_t * parent_ctx);
 void o_ctx_del(o_ctx_t * ctx);
 
 #endif
