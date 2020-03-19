@@ -1,14 +1,16 @@
+// gcc -O3 -c test1.c && gcc -o test1 test1.o && ls -l test1 && time ./test1
+// clang -O3 -c test1.c && clang -o test1 test1.o && ls -l test1 && time ./test1
 #include <stdio.h>
 
 int main() {
     volatile int i = 0;
     // int i = 0;
 
-    /*
     while (i < 200000000) {
         i += 1;
     }
-    */
+
+    /*
     int j = (200000000 + 15) / 16;
 
     switch (i % 16) {
@@ -30,6 +32,7 @@ int main() {
         case 1:      i++;
                 } while (--j > 0);
     }
+    */
 
     printf("i: %d\n", i);
     return 0;
