@@ -1,5 +1,5 @@
-// gcc -O4 -c vm1.c && gcc -o vm1 vm1.o && time ./vm1
-// clang -O4 -c vm1.c && clang -o vm1 vm1.o && time ./vm1
+// gcc -O4 -c vm.c && gcc -o vm vm.o && time ./vm
+// clang -O4 -c vm.c && clang -o vm vm.o && time ./vm
 //
 // gcc -O2 -fprofile-generate -c vm1.c && gcc -fprofile-generate -o vm1 vm1.o && time ./vm1 && gcc -O2 -fprofile-use -c vm1.c && gcc -o vm1 vm1.o && time ./vm1
 // gcc -O3 -fprofile-generate -c vm1.c && gcc -fprofile-generate -o vm1 vm1.o && time ./vm1 && gcc -O3 -fprofile-use -c vm1.c && gcc -o vm1 vm1.o && time ./vm1
@@ -73,8 +73,50 @@ void f() {
     inst_array_t * insts = inst_array_new();
     int64_array_t * regs = int64_array_new();
     byte_array_t * native_code = byte_array_new();
+    inst_t * inst;
+
+    goto compile_insts;
+
+int_const:
+    regs->items[inst->a] = inst->b;
+    DISPATCH;
+
+mov:
+    regs->items[inst->a] = regs->items[inst->b];
+    DISPATCH;
+
+jmp:
+    DISPATCH_JUMP(inst->a);
+
+jlt:
+    if (regs->items[inst->a] < regs->items[inst->b]) {
+        DISPATCH;
+    } else {
+        DISPATCH_JUMP(inst->c);
+    }
+    
+jeq:
+    if (regs->items[inst->a] == regs->items[inst->b]) {
+        DISPATCH;
+    } else {
+        DISPATCH_JUMP(inst->c);
+    }
+
+add:
+    regs->items[inst->a] = regs->items[inst->b] + regs->items[inst->c];
+    DISPATCH;
+
+mod:
+    regs->items[inst->a] = regs->items[inst->b] % regs->items[inst->c];
+    DISPATCH;
+
+nop:
+    DISPATCH;
+end:
+    goto finish;
 
     // insttructions
+compile_insts:
     insts_append(int_const, 0, 10, D);       // a = 10
     insts_append(int_const, 1, 2, D);        // b = 2
     insts_append(int_const, 2, 200000000, D);// c = 200000000
@@ -100,51 +142,64 @@ void f() {
     insts_append(jmp, -15,   D,   D);        //
     insts_append(end,   D,   D,   D);        // }
 
+    /*void * ops[] = {
+        &&int_const,
+        &&mov,
+        &&jmp,
+        &&jlt,
+        &&jeq,
+        &&add,
+        &&mod,
+        &&nop,
+        &&end
+    };*/
+
     // compile to native_code
-    
+    inst_t curr_inst;
+    void *from_inst;
+    void *to_inst;
+    void *t_mem;
+    size_t t_size;
 
-    // goto first inst
-    inst_t * inst = insts->items;
-    goto *inst->op;
+    // inst = insts->items;
+    // goto *inst->op;
 
-    int_const:
-        regs->items[inst->a] = inst->b;
-        DISPATCH;
-    
-    mov:
-        regs->items[inst->a] = regs->items[inst->b];
-        DISPATCH;
-    
-    jmp:
-        DISPATCH_JUMP(inst->a);
-    
-    jlt:
-        if (regs->items[inst->a] < regs->items[inst->b]) {
-            DISPATCH;
-        } else {
-            DISPATCH_JUMP(inst->c);
-        }
+    for (size_t i = 0; i < insts->len; i++) {
+        // curr_inst = insts->items[i];
+        curr_inst = inst_array_getitem(insts, i);
+        printf("curr_inst: \t %lu \t %p\n", i, curr_inst.op);
+
+        // switch (curr_op) {
+        //     case int_const_op:
+        //         printf("t_const: %lu %lu %lu %lu\n", i, curr_inst.a, curr_inst.b, curr_inst.c);
+        //         break;
+        //     default:
+        //         break;
+        // }
+
+        // if (curr_inst.op == &&int_const) {
+        //     printf("int_const: %lu %lu %lu %lu\n", i, curr_inst.a, curr_inst.b, curr_inst.c);
+        // } else {
+        //     printf('other inst\n');
+        // }
         
-    jeq:
-        if (regs->items[inst->a] == regs->items[inst->b]) {
-            DISPATCH;
-        } else {
-            DISPATCH_JUMP(inst->c);
-        }
+        // from_inst = &&int_const;
+        // to_inst = &&mov;
 
-    add:
-        regs->items[inst->a] = regs->items[inst->b] + regs->items[inst->c];
-        DISPATCH;
+        // t_size = to_inst - from_inst;
+        // printf("t_size: %lu\n", t_size);
+        // t_mem = malloc(sizeof(t_size));
+        // memmove(t_mem, &&int_const, t_size);
+        // free(t_mem);
+    }
+    
+    // intepret
+    inst = insts->items;
+    goto *inst->op;
+    // goto end;
 
-    mod:
-        regs->items[inst->a] = regs->items[inst->b] % regs->items[inst->c];
-        DISPATCH;
-
-    nop:
-        DISPATCH;
-
-    end:
-        ;
+finish:
+    ;
 
     printf("i: %ld\n", regs->items[6]);
 
