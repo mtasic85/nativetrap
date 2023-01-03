@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#define INLINE __inline__
+// #define INLINE __inline__
 #define DUMMY UINT64_MAX
 #define D DUMMY
 #define DISPATCH inst++; goto *inst->op
@@ -38,19 +38,19 @@
         free(s); \
     } \
     \
-    INLINE type prefix ## _array_getitem(prefix ## _array_t * s, size_t index) { \
+    type prefix ## _array_getitem(prefix ## _array_t * s, size_t index) { \
         return s->items[index]; \
     } \
     \
-    INLINE void prefix ## _array_setitem(prefix ## _array_t * s, size_t index, type value) { \
+    void prefix ## _array_setitem(prefix ## _array_t * s, size_t index, type value) { \
         s->items[index] = value; \
     } \
     \
-    INLINE void prefix ## _array_append(prefix ## _array_t * s, type value) { \
+    void prefix ## _array_append(prefix ## _array_t * s, type value) { \
         s->items[s->len++] = value; \
     } \
     \
-    INLINE type prefix ## _array_pop(prefix ## _array_t * s) { \
+    type prefix ## _array_pop(prefix ## _array_t * s) { \
         return s->items[--s->len]; \
     }
 
@@ -68,14 +68,39 @@ MAKE_ARRAY(byte, uint8_t);
 #define insts_append(op, a, b, c) \
     inst_array_append(insts, (inst_t){&&op, a, b, c})
 
-void f() {
+void __attribute__((__noinline__,__noclone__)) f(void);
+
+void f(void) {
     // instructions and registers
     inst_array_t * insts = inst_array_new();
     int64_array_t * regs = int64_array_new();
     byte_array_t * native_code = byte_array_new();
     inst_t * inst;
 
-    goto compile_insts;
+    static const int ops_diff[] = {
+        &&begin - &&begin,
+        &&int_const - &&begin,
+        &&mov - &&int_const,
+        &&jmp - &&mov,
+        &&jlt - &&jmp,
+        &&jeq - &&jlt,
+        &&add - &&jeq,
+        &&mod - &&add,
+        &&nop - &&mod,
+        &&end - &&nop,
+        &&compile_insts - &&end,
+        &&finish - &&compile_insts
+    };
+
+    printf("begin: \t\t %p\n", &&begin);
+    printf("int_const: \t %p\n", &&int_const);
+    printf("mov: \t\t %p\n", &&mov);
+
+    // goto compile_insts;
+    goto begin;
+
+begin:
+    goto end;
 
 int_const:
     regs->items[inst->a] = inst->b;
@@ -142,17 +167,7 @@ compile_insts:
     insts_append(jmp, -15,   D,   D);        //
     insts_append(end,   D,   D,   D);        // }
 
-    /*void * ops[] = {
-        &&int_const,
-        &&mov,
-        &&jmp,
-        &&jlt,
-        &&jeq,
-        &&add,
-        &&mod,
-        &&nop,
-        &&end
-    };*/
+    
 
     // compile to native_code
     inst_t curr_inst;
@@ -167,42 +182,40 @@ compile_insts:
     for (size_t i = 0; i < insts->len; i++) {
         // curr_inst = insts->items[i];
         curr_inst = inst_array_getitem(insts, i);
-        printf("curr_inst: \t %lu \t %p\n", i, curr_inst.op);
+        // printf("curr_inst: \t %lu \t %p\n", i, curr_inst.op);
 
-        // switch (curr_op) {
-        //     case int_const_op:
-        //         printf("t_const: %lu %lu %lu %lu\n", i, curr_inst.a, curr_inst.b, curr_inst.c);
-        //         break;
-        //     default:
-        //         break;
-        // }
-
-        // if (curr_inst.op == &&int_const) {
-        //     printf("int_const: %lu %lu %lu %lu\n", i, curr_inst.a, curr_inst.b, curr_inst.c);
-        // } else {
-        //     printf('other inst\n');
-        // }
+        if (curr_inst.op == &&int_const) {
+            from_inst = &&int_const;
+            to_inst = &&mov;
+            printf("int_const: %lu %lu %lu %lu\n", i, curr_inst.a, curr_inst.b, curr_inst.c);
+        } else if (curr_inst.op == &&mov) {
+            from_inst = &&mov;
+            to_inst = &&jmp;
+            printf("mov: %lu %lu %lu %lu\n", i, curr_inst.a, curr_inst.b, curr_inst.c);
+        } else {
+            printf("other inst\n");
+        }
         
-        // from_inst = &&int_const;
-        // to_inst = &&mov;
 
-        // t_size = to_inst - from_inst;
-        // printf("t_size: %lu\n", t_size);
-        // t_mem = malloc(sizeof(t_size));
-        // memmove(t_mem, &&int_const, t_size);
-        // free(t_mem);
+        t_size = to_inst - from_inst;
+        printf("t_size: %lu\n", t_size);
+        t_mem = malloc(sizeof(t_size));
+        memmove(t_mem, &&int_const, t_size);
+        free(t_mem);
     }
     
     // intepret
-    inst = insts->items;
-    goto *inst->op;
+    // inst = insts->items;
+    // goto *inst->op;
+    
     // goto end;
 
-finish:
-    ;
+    goto cleanup;
 
+finish:
     printf("i: %ld\n", regs->items[6]);
 
+cleanup:
     // cleanup
     byte_array_del(native_code);
     int64_array_del(regs);
